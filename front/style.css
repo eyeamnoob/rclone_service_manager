@@ -1,0 +1,24 @@
+/* style.cc */
+
+.container {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.table th,
+.table td {
+    padding: 10px;
+    border: 1px solid black;
+}
+
+.table thead {
+    background-color: #f2f2f2;
+}
+
+/* Add more styles as needed */
