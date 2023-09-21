@@ -17,14 +17,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const name = name_input.value;
     const command = command_input.value;
-    const status = status_input.value;
+    const status = status_input.checked;
 
     new_service_row(name, command, status);
 
     // Reset the form
     name_input.value = "";
     command_input.value = "";
-    status_input.value = "";
+    status_input.checked = false;
 
     create_service_form.classList.add("hidden");
   });
@@ -38,10 +38,8 @@ function new_service_row(name, command, status) {
   const new_row = document.createElement("tr");
 
   const name_cell = document.createElement("td");
-  name_cell.classList = "py-2 px-4 border-b text-left";
 
   const name_logo = document.createElement("i");
-  name_logo.classList = "fas fa-hdd text-blue-500";
 
   const name_text = document.createTextNode(` ${name}`);
 
@@ -49,10 +47,8 @@ function new_service_row(name, command, status) {
   name_cell.appendChild(name_text);
 
   const command_cell = document.createElement("td");
-  command_cell.classList = "py-2 px-4 border-b text-left";
 
   command_logo = document.createElement("i");
-  command_logo.classList = "fas fa-terminal text-blue-500";
 
   command_text = document.createTextNode(` ${command}`);
 
@@ -60,15 +56,14 @@ function new_service_row(name, command, status) {
   command_cell.appendChild(command_text);
 
   const status_cell = document.createElement("td");
-  status_cell.classList = "py-2 px-4 border-b text-left";
 
   const status_logo = document.createElement("i");
   let status_text;
   if (status) {
-    status_logo.classList = "fas fa-circle text-blue-500";
+    status_logo.classList = "fas fa-circle text-blue";
     status_text = document.createTextNode(" running");
   } else {
-    status_logo.classList = "fas fa-circle text-red-500";
+    status_logo.classList = "fas fa-circle text-red";
     status_text = document.createTextNode(" stopped");
   }
 
