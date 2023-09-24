@@ -4,6 +4,8 @@ const create_service_form = document.getElementById("create-service-form");
 const submit_button = document.getElementById("submit-btn");
 const run_rclone_button = document.getElementById("run-rclone-btn");
 const services_table = document.getElementById("services-table");
+const file_input = document.getElementById("file-input");
+let rclone_path = "";
 
 let is_rclone_running = false;
 
@@ -25,7 +27,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
     new_service_row(name, command, status);
 
-    // Reset the form
     name_input.value = "";
     command_input.value = "";
     status_input.checked = false;
@@ -78,11 +79,20 @@ function new_service_row(name, command, status) {
   services_table_body.appendChild(new_row);
 }
 
+file_input.addEventListener("change", () => {
+  rclone_path = file_input.files[0].path;
+  IPCRenderer.send("rclone:start", { rclone_path });
+});
+
 run_rclone_button.addEventListener("click", function (event) {
   if (is_rclone_running) {
     IPCRenderer.send("rclone:stop", {});
   } else {
-    IPCRenderer.send("rclone:start", {});
+    if (rclone_path.length === 0) {
+      file_input.click();
+    } else {
+      IPCRenderer.send("rclone:start", { rclone_path });
+    }
   }
   is_rclone_running = !is_rclone_running;
 });
@@ -97,7 +107,8 @@ IPCRenderer.on("rclone:started", () => {
   for (let i = 0; i < rows.length; i++) {
     const row = rows[i];
     if (row.id === "Rclone-service") {
-      row.cells[2].innerHTML = '<i class="fas fa-circle text-blue"></i> running';
+      row.cells[2].innerHTML =
+        '<i class="fas fa-circle text-blue"></i> running';
     }
   }
 });

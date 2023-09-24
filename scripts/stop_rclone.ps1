@@ -6,6 +6,8 @@ if ($null -ne $service) {
     Write-Host "Service exists."
     Stop-Service Rclone
     Write-Host "Rclone service Stopped."
-} else {
+}
+else {
     Write-Host "Service does not exist."
 }
+exit 0

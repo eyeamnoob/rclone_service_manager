@@ -67,23 +67,32 @@ app.whenReady().then(() => {
 });
 
 ipcMain.on("rclone:start", (e, data) => {
+  console.log(data.rclone_path);
   const script_path = path.join(__dirname, "scripts", "run_rclone.ps1");
-  const command = `Start-Process powershell -verb runas -WindowStyle Hidden -ArgumentList "-WindowStyle Hidden -ExecutionPolicy Bypass -file ${script_path}"`;
+  const command = `try {
+    $ErrorActionPreference = 'Stop'
+    Start-Process powershell -ErrorAction Stop -Verb RunAs -WindowStyle Hidden -ArgumentList "-ExecutionPolicy Bypass -File ${script_path} ${data.rclone_path}"
+}
+catch {
+    exit 1
+}`;
   exec(command, { shell: "powershell.exe" }, (error, stdout, stderr) => {
     if (error) {
       console.log("Error on executing script", error);
+    } else {
+      main_window.webContents.send("rclone:started");
     }
-    main_window.webContents.send("rclone:started");
   });
 });
 
 ipcMain.on("rclone:stop", (e, data) => {
   const script_path = path.join(__dirname, "scripts", "stop_rclone.ps1");
-  const command = `Start-Process powershell -verb runas -WindowStyle Hidden -ArgumentList "-WindowStyle Hidden -ExecutionPolicy Bypass -file ${script_path}"`;
+  const command = `Start-Process powershell -verb runas -WindowStyle Hidden -ArgumentList "-ExecutionPolicy Bypass -file ${script_path}"`;
   exec(command, { shell: "powershell.exe" }, (error, stdout, stderr) => {
     if (error) {
       console.log("Error on executing script", error);
+    } else {
+      main_window.webContents.send("rclone:stopped");
     }
-    main_window.webContents.send("rclone:stopped");
   });
 });
