@@ -1,8 +1,9 @@
-const services_table = document.querySelector("#services-table tbody");
+const services_table_body = document.querySelector("#services-table tbody");
 const create_service_button = document.getElementById("create-service-btn");
 const create_service_form = document.getElementById("create-service-form");
 const submit_button = document.getElementById("submit-btn");
 const run_rclone_button = document.getElementById("run-rclone-btn");
+const services_table = document.getElementById("services-table");
 
 let is_rclone_running = false;
 
@@ -31,10 +32,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
     create_service_form.classList.add("hidden");
   });
-
-  new_service_row("service 1", "command1 --flags /path/to/a/file", true);
-  new_service_row("service 2", "command2 --flags /path/to/a/file", true);
-  new_service_row("service 3", "command3 --flags /path/to/a/file", false);
 });
 
 function new_service_row(name, command, status) {
@@ -42,20 +39,20 @@ function new_service_row(name, command, status) {
 
   const name_cell = document.createElement("td");
 
-  const name_logo = document.createElement("i");
+  // const name_logo = document.createElement("i");
 
   const name_text = document.createTextNode(` ${name}`);
 
-  name_cell.appendChild(name_logo);
+  // name_cell.appendChild(name_logo);
   name_cell.appendChild(name_text);
 
   const command_cell = document.createElement("td");
 
-  command_logo = document.createElement("i");
+  // command_logo = document.createElement("i");
 
   command_text = document.createTextNode(` ${command}`);
 
-  command_cell.appendChild(command_logo);
+  // command_cell.appendChild(command_logo);
   command_cell.appendChild(command_text);
 
   const status_cell = document.createElement("td");
@@ -77,7 +74,8 @@ function new_service_row(name, command, status) {
   new_row.appendChild(command_cell);
   new_row.appendChild(status_cell);
 
-  services_table.appendChild(new_row);
+  new_row.id = name + "-service";
+  services_table_body.appendChild(new_row);
 }
 
 run_rclone_button.addEventListener("click", function (event) {
@@ -91,18 +89,35 @@ run_rclone_button.addEventListener("click", function (event) {
 
 IPCRenderer.on("rclone:started", () => {
   console.log("rclone service started.");
+
   run_rclone_button.innerText = "Stop Rclone";
   run_rclone_button.style.backgroundColor = "red";
+
+  const rows = services_table.rows;
+  for (let i = 0; i < rows.length; i++) {
+    const row = rows[i];
+    if (row.id === "Rclone-service") {
+      row.cells[2].innerHTML = '<i class="fas fa-circle text-blue"></i> running';
+    }
+  }
 });
 
 IPCRenderer.on("rclone:stopped", () => {
   console.log("rclone service stopped.");
+
   run_rclone_button.innerText = "Run Rclone";
   run_rclone_button.style.backgroundColor = "#4b84fe";
+
+  const rows = services_table.rows;
+  for (let i = 0; i < rows.length; i++) {
+    const row = rows[i];
+    if (row.id === "Rclone-service") {
+      row.cells[2].innerHTML = '<i class="fas fa-circle text-red"></i> stopped';
+    }
+  }
 });
 
 IPCRenderer.on("rclone:check", (event, data) => {
-  console.log(data);
   if (data.status === "running") {
     is_rclone_running = true;
     run_rclone_button.innerText = "Stop Rclone";

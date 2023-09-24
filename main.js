@@ -18,7 +18,6 @@ function check_rclone(callback) {
       } else {
         if (stdout.trim().length > 0) {
           if (stdout.trim() === "Running") {
-            console.log("heeyeeeyeye");
             callback("running");
           } else if (stdout.trim() === "Stopped") {
             callback("stopped");
