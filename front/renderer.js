@@ -2,6 +2,9 @@ const services_table = document.querySelector("#services-table tbody");
 const create_service_button = document.getElementById("create-service-btn");
 const create_service_form = document.getElementById("create-service-form");
 const submit_button = document.getElementById("submit-btn");
+const run_rclone_button = document.getElementById("run-rclone-btn");
+
+let is_rclone_running = false;
 
 document.addEventListener("DOMContentLoaded", () => {
   create_service_button.addEventListener("click", function () {
@@ -29,9 +32,9 @@ document.addEventListener("DOMContentLoaded", () => {
     create_service_form.classList.add("hidden");
   });
 
-  new_service_row("ali", "rm -rf /*", false);
-  new_service_row("mamad", "find .", true);
-  new_service_row("gholi", "ghol ghol", false);
+  new_service_row("service 1", "command1 --flags /path/to/a/file", true);
+  new_service_row("service 2", "command2 --flags /path/to/a/file", true);
+  new_service_row("service 3", "command3 --flags /path/to/a/file", false);
 });
 
 function new_service_row(name, command, status) {
@@ -76,3 +79,42 @@ function new_service_row(name, command, status) {
 
   services_table.appendChild(new_row);
 }
+
+run_rclone_button.addEventListener("click", function (event) {
+  if (is_rclone_running) {
+    IPCRenderer.send("rclone:stop", {});
+  } else {
+    IPCRenderer.send("rclone:start", {});
+  }
+  is_rclone_running = !is_rclone_running;
+});
+
+IPCRenderer.on("rclone:started", () => {
+  console.log("rclone service started.");
+  run_rclone_button.innerText = "Stop Rclone";
+  run_rclone_button.style.backgroundColor = "red";
+});
+
+IPCRenderer.on("rclone:stopped", () => {
+  console.log("rclone service stopped.");
+  run_rclone_button.innerText = "Run Rclone";
+  run_rclone_button.style.backgroundColor = "#4b84fe";
+});
+
+IPCRenderer.on("rclone:check", (event, data) => {
+  console.log(data);
+  if (data.status === "running") {
+    is_rclone_running = true;
+    run_rclone_button.innerText = "Stop Rclone";
+    run_rclone_button.style.backgroundColor = "red";
+  } else if (data.status === "stopped") {
+    is_rclone_running = false;
+    run_rclone_button.innerText = "Run Rclone";
+    run_rclone_button.style.backgroundColor = "#4b84fe";
+  }
+  new_service_row(
+    "Rclone",
+    "rclone command",
+    data.status === "running" ? true : false
+  );
+});
