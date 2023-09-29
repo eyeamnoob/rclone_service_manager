@@ -67,18 +67,22 @@ app.whenReady().then(() => {
 });
 
 ipcMain.on("rclone:start", (e, data) => {
-  console.log(data.rclone_path);
   const script_path = path.join(__dirname, "scripts", "run_rclone.ps1");
-  const command = `try {
-    $ErrorActionPreference = 'Stop'
-    Start-Process powershell -ErrorAction Stop -Verb RunAs -WindowStyle Hidden -ArgumentList "-ExecutionPolicy Bypass -File ${script_path} ${data.rclone_path}"
-}
-catch {
-    exit 1
-}`;
+  const rclone_log_file = "c:\\rclone_log.txt";
+  const command = `$ErrorActionPreference = 'stop'
+  try {
+      $output = Start-Process powershell -Verb RunAs -Wait -PassThru -WindowStyle Hidden -ArgumentList "-ExecutionPolicy Bypass -File ${script_path} ${data.rclone_path} ${rclone_log_file}"
+      if ($output.ExitCode -ne 0) {
+          exit 1
+      }
+      exit 0
+  }
+  catch {
+      exit 1
+  }`;
   exec(command, { shell: "powershell.exe" }, (error, stdout, stderr) => {
     if (error) {
-      console.log("Error on executing script", error);
+      console.log(`Error on executing script: ${script_path}`);
     } else {
       main_window.webContents.send("rclone:started");
     }
