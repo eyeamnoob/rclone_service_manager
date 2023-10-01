@@ -6,6 +6,8 @@ process.env.NODE_ENV = "production";
 
 const is_dev = process.env.NODE_ENV !== "production";
 
+const RESOURCES_PATH = is_dev ? __dirname : process.resourcesPath;
+
 let main_window;
 
 function check_rclone(callback) {
@@ -70,14 +72,15 @@ app.whenReady().then(() => {
 
 ipcMain.on("rclone:start", (e, data) => {
   const script_path = path.join(
-    process.resourcesPath,
+    RESOURCES_PATH,
     "scripts",
     "run_rclone.ps1"
   );
-  const rclone_log_file = "c:\\rclone_log.txt";
+  const rclone_log_file = "C:\\rclone_log.txt";
+  const rclone_config_file = "C:\\rclone.conf";
   const command = `$ErrorActionPreference = 'stop'
   try {
-      $output = Start-Process powershell -Verb RunAs -Wait -PassThru -WindowStyle Hidden -ArgumentList "-ExecutionPolicy Bypass -File ${script_path} ${data.rclone_path} ${rclone_log_file}"
+      $output = Start-Process powershell -Verb RunAs -Wait -PassThru -WindowStyle Hidden -ArgumentList "-ExecutionPolicy Bypass -File ${script_path} ${data.rclone_path} ${rclone_log_file} ${rclone_config_file}"
       if ($output.ExitCode -ne 0) {
           exit 1
       }
@@ -97,7 +100,7 @@ ipcMain.on("rclone:start", (e, data) => {
 
 ipcMain.on("rclone:stop", (e, data) => {
   const script_path = path.join(
-    process.resourcesPath,
+    RESOURCES_PATH,
     "scripts",
     "stop_rclone.ps1"
   );
