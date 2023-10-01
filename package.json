@@ -1,6 +1,11 @@
 {
   "devDependencies": {
     "@electron-forge/cli": "^6.4.2",
+    "@electron-forge/maker-deb": "^6.4.2",
+    "@electron-forge/maker-rpm": "^6.4.2",
+    "@electron-forge/maker-squirrel": "^6.4.2",
+    "@electron-forge/maker-zip": "^6.4.2",
+    "@electron-forge/plugin-auto-unpack-natives": "^6.4.2",
     "electron": "^26.2.1"
   },
   "name": "rclone_service_manager",
@@ -65,7 +70,7 @@
     "detect-node": "^2.1.0",
     "dir-compare": "^3.3.0",
     "eastasianwidth": "^0.2.0",
-    "electron-packager": "^17.1.2",
+    "electron-squirrel-startup": "^1.0.0",
     "emoji-regex": "^8.0.0",
     "encoding": "^0.1.13",
     "end-of-stream": "^1.4.4",
@@ -305,7 +310,9 @@
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "electron ."
+    "start": "electron-forge start",
+    "package": "electron-forge package",
+    "make": "electron-forge make"
   },
   "author": "Ali Afraz",
   "license": "ISC"

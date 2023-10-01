@@ -2,6 +2,8 @@ const { app, BrowserWindow, ipcMain } = require("electron");
 const path = require("node:path");
 const { exec } = require("child_process");
 
+process.env.NODE_ENV = "production";
+
 const is_dev = process.env.NODE_ENV !== "production";
 
 let main_window;
@@ -67,7 +69,11 @@ app.whenReady().then(() => {
 });
 
 ipcMain.on("rclone:start", (e, data) => {
-  const script_path = path.join(__dirname, "scripts", "run_rclone.ps1");
+  const script_path = path.join(
+    process.resourcesPath,
+    "scripts",
+    "run_rclone.ps1"
+  );
   const rclone_log_file = "c:\\rclone_log.txt";
   const command = `$ErrorActionPreference = 'stop'
   try {
@@ -90,7 +96,11 @@ ipcMain.on("rclone:start", (e, data) => {
 });
 
 ipcMain.on("rclone:stop", (e, data) => {
-  const script_path = path.join(__dirname, "scripts", "stop_rclone.ps1");
+  const script_path = path.join(
+    process.resourcesPath,
+    "scripts",
+    "stop_rclone.ps1"
+  );
   const command = `Start-Process powershell -verb runas -WindowStyle Hidden -ArgumentList "-ExecutionPolicy Bypass -file ${script_path}"`;
   exec(command, { shell: "powershell.exe" }, (error, stdout, stderr) => {
     if (error) {
