@@ -25,7 +25,9 @@ document.addEventListener("DOMContentLoaded", () => {
     const command = command_input.value;
     const status = status_input.checked;
 
-    new_service_row(name, command, status);
+    IPCRenderer.send("service:create", { name, command, status });
+
+    // new_service_row(name, command, status);
 
     name_input.value = "";
     command_input.value = "";
@@ -40,20 +42,14 @@ function new_service_row(name, command, status) {
 
   const name_cell = document.createElement("td");
 
-  // const name_logo = document.createElement("i");
-
   const name_text = document.createTextNode(` ${name}`);
 
-  // name_cell.appendChild(name_logo);
   name_cell.appendChild(name_text);
 
   const command_cell = document.createElement("td");
 
-  // command_logo = document.createElement("i");
-
   command_text = document.createTextNode(` ${command}`);
 
-  // command_cell.appendChild(command_logo);
   command_cell.appendChild(command_text);
 
   const status_cell = document.createElement("td");
@@ -144,3 +140,11 @@ IPCRenderer.on("rclone:check", (event, data) => {
     data.status === "running" ? true : false
   );
 });
+
+IPCRenderer.on("service:created", (event, data) => {
+  new_service_row(
+    data.name,
+    data.command,
+    data.status === "running" ? true : false
+  );
+})
