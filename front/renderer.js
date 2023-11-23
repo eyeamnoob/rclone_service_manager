@@ -147,4 +147,20 @@ IPCRenderer.on("service:created", (event, data) => {
     data.command,
     data.status === "running" ? true : false
   );
-})
+});
+
+IPCRenderer.on("error", (event, data) => {
+  Toastify.toast({
+    text: data.message,
+    duration: 5000,
+    close: false,
+    stopOnFocus: true,
+    style: {
+      background: "red",
+      color: "white",
+      textAlign: "center",
+      fontSize: "16px",
+      padding: "8px",
+    },
+  });
+});

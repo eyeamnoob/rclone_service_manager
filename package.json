@@ -281,6 +281,7 @@
     "tar": "^6.2.0",
     "through": "^2.3.8",
     "to-regex-range": "^5.0.1",
+    "toastify-js": "^1.12.0",
     "tr46": "^0.0.3",
     "trim-repeated": "^1.0.0",
     "tslib": "^2.6.2",

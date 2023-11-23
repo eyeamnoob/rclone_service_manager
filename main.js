@@ -36,7 +36,7 @@ function check_rclone(callback) {
   );
 }
 
-function create_main_window() {
+async function create_main_window() {
   main_window = new BrowserWindow({
     title: "manage rclone services",
     width: 1000,
@@ -51,16 +51,20 @@ function create_main_window() {
   if (is_dev) {
     main_window.webContents.openDevTools();
   }
+
   main_window.removeMenu();
 
-  main_window.loadFile(path.join(__dirname, "./front/main.html"));
+  await main_window.loadFile(path.join(__dirname, "./front/main.html"));
 }
 
-app.whenReady().then(() => {
-  create_main_window();
+app.whenReady().then(async () => {
+  await create_main_window();
 
   check_rclone((status) => {
     main_window.webContents.send("rclone:check", { status: status });
+  });
+  main_window.webContents.send("error", {
+    message: "hello from the back-end",
   });
 
   app.on("activate", () => {
