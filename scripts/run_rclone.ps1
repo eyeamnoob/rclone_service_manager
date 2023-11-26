@@ -3,6 +3,7 @@ try {
     $rclone_path = $args[0]
     $rclone_log_file = $args[1]
     $rclone_config_file = $args[2]
+    $rclone_endpoint = $args[3]
 
 
     $service = Get-Service -Name Rclone -ErrorAction SilentlyContinue
@@ -13,7 +14,7 @@ try {
     else {
         Write-Output "Service does not exist."
         Write-Output 'Creating Rclone service...'
-        New-Service -Name Rclone -BinaryPathName "$($rclone_path) mount monster: X: --config $($rclone_config_file) --log-file $($rclone_log_file)"
+        New-Service -Name Rclone -BinaryPathName "$($rclone_path) mount $($rclone_endpoint): X: --config $($rclone_config_file) --log-file $($rclone_log_file)"
         Write-Output 'Rclone service created.'
     }
     

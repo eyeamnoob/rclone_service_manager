@@ -1,6 +1,8 @@
 const { app, BrowserWindow, ipcMain } = require("electron");
 const path = require("node:path");
 const { exec } = require("child_process");
+const fs = require("node:fs");
+const os = require("node:os");
 
 process.env.NODE_ENV = "dev";
 
@@ -74,10 +76,65 @@ app.whenReady().then(async () => {
   });
 });
 
+function create_config_file(data) {
+  const config_file_template =
+    "# last modified on {last_mod_date}\n" +
+    "[{name}]\n" +
+    "type = swift\n" +
+    "env_auth = false\n" +
+    "user = {username}\n" +
+    "key = {password}\n" +
+    "region = us-east-1\n" +
+    "auth = https://api.zdrive.ir/auth/v1.0";
+
+  const username = data.username;
+  const password = data.password;
+  const endpoint = data.endpoint;
+
+  if (!username || !password || !endpoint) {
+    return -1;
+  }
+
+  const user_home_dir = os.homedir();
+  const application_dir = user_home_dir + "\\rclone_service_manager";
+  fs.existsSync(application_dir) ||
+    fs.mkdirSync(application_dir, { recursive: true });
+
+  const config_file = application_dir + `\\${endpoint}.conf`;
+
+  if (fs.existsSync(config_file)) {
+    return 1; // config file exists. so we need to use it or overwrite it.
+  }
+
+  const ready_to_write = config_file_template
+    .replace("{name}", endpoint)
+    .replace("{username}", username)
+    .replace("{password}", password)
+    .replace("{last_mode_date}", new Date());
+
+  fs.writeFile(config_file, ready_to_write);
+
+  return config_file;
+}
+
 ipcMain.on("rclone:start", (e, data) => {
   const script_path = path.join(RESOURCES_PATH, "scripts", "run_rclone.ps1");
-  const rclone_log_file = "C:\\rclone_log.txt";
-  const rclone_config_file = "C:\\rclone.conf";
+  const rclone_log_file = `C:\\rclone_log_${new Date()}.txt`;
+  const rclone_config_file = create_config_file(data);
+
+  if (rclone_config_file == 1) {
+    console.log("config file already exists");
+    main_window.webContents.send("error", {
+      message: "config file already exists",
+    });
+  } else if (rclone_config_file == -1) {
+    console.log("provide all required informations");
+    main_window.webContents.send("error", {
+      message: "provide all required informations",
+    });
+    return;
+  }
+
   const command = `$ErrorActionPreference = 'stop'
   try {
       $output = Start-Process powershell -Verb RunAs -Wait -PassThru -WindowStyle Hidden -ArgumentList "-ExecutionPolicy Bypass -File ${script_path} ${data.rclone_path} ${rclone_log_file} ${rclone_config_file}"
