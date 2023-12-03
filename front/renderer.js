@@ -9,33 +9,29 @@ let rclone_path = "";
 
 let is_rclone_running = false;
 
-document.addEventListener("DOMContentLoaded", () => {
-  create_service_button.addEventListener("click", function () {
-    create_service_form.classList.toggle("hidden");
-  });
+// document.addEventListener("DOMContentLoaded", () => {
+//   submit_button.addEventListener("click", function (event) {
+//     event.preventDefault();
 
-  submit_button.addEventListener("click", function (event) {
-    event.preventDefault();
+//     const name_input = document.getElementById("name");
+//     const command_input = document.getElementById("command");
+//     const status_input = document.getElementById("status");
 
-    const name_input = document.getElementById("name");
-    const command_input = document.getElementById("command");
-    const status_input = document.getElementById("status");
+//     const name = name_input.value;
+//     const command = command_input.value;
+//     const status = status_input.checked;
 
-    const name = name_input.value;
-    const command = command_input.value;
-    const status = status_input.checked;
+//     IPCRenderer.send("service:create", { name, command, status });
 
-    IPCRenderer.send("service:create", { name, command, status });
+//     // new_service_row(name, command, status);
 
-    // new_service_row(name, command, status);
+//     name_input.value = "";
+//     command_input.value = "";
+//     status_input.checked = false;
 
-    name_input.value = "";
-    command_input.value = "";
-    status_input.checked = false;
-
-    create_service_form.classList.add("hidden");
-  });
-});
+//     create_service_form.classList.add("hidden");
+//   });
+// });
 
 function new_service_row(name, command, status) {
   const new_row = document.createElement("tr");
@@ -92,6 +88,40 @@ run_rclone_button.addEventListener("click", function (event) {
   }
   is_rclone_running = !is_rclone_running;
 });
+
+function openForm() {
+  var overlay = document.getElementById("overlay");
+  var popup = document.getElementById("popupContainer");
+
+  overlay.style.display = "block";
+  popup.style.display = "block";
+}
+
+function closeForm() {
+  var overlay = document.getElementById("overlay");
+  var popup = document.getElementById("popupContainer");
+
+  overlay.style.display = "none";
+  popup.style.display = "none";
+}
+
+function submitForm() {
+  var name = document.querySelector(
+    '#popupContainer input[placeholder="Name"]'
+  ).value;
+  var email = document.querySelector(
+    '#popupContainer input[placeholder="Email"]'
+  ).value;
+  var phone = document.querySelector(
+    '#popupContainer input[placeholder="Phone"]'
+  ).value;
+
+  console.log("Name:", name);
+  console.log("Email:", email);
+  console.log("Phone:", phone);
+
+  closeForm();
+}
 
 IPCRenderer.on("rclone:started", () => {
   console.log("rclone service started.");

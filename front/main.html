@@ -5,10 +5,20 @@
     <title>Rclone service manager</title>
     <link rel="stylesheet" href="./normalize.css" />
     <link rel="stylesheet" href="./fontawesome/css/all.css" />
-    <meta http-equiv="Content-Security-Policy" content="script-src 'self'"/>
+    <!-- <meta http-equiv="Content-Security-Policy" content="script-src 'self'" /> -->
     <link rel="stylesheet" href="./style.css" />
   </head>
   <body>
+    <div id="overlay" class="overlay"></div>
+
+    <div id="popupContainer" class="popup">
+      <button onclick="closeForm()">Close</button>
+      <input type="text" placeholder="Name" autofocus />
+      <input type="text" placeholder="Email" />
+      <input type="text" placeholder="Phone" />
+      <button onclick="submitForm()">Submit</button>
+    </div>
+
     <!-- partial:index.partial.html -->
     <div class="dashboard">
       <header class="menu-wrap">
@@ -29,9 +39,11 @@
           <h1>Services</h1>
 
           <div class="action">
-            <button id="create-service-btn">+ New Service</button>
+            <button id="create-service-btn" onclick="openForm()">
+              + New Service
+            </button>
             <button id="run-rclone-btn">Run Rclone</button>
-            <input type="file" id="file-input" style="display: none;">
+            <input type="file" id="file-input" style="display: none" />
           </div>
         </header>
 
