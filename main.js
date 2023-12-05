@@ -118,6 +118,8 @@ function create_config_file(data) {
 }
 
 ipcMain.on("rclone:start", (e, data) => {
+  console.log(data);
+  return; // remember to delete these two lines.
   const script_path = path.join(RESOURCES_PATH, "scripts", "run_rclone.ps1");
   const rclone_log_file = `C:\\rclone_log_${new Date()}.txt`;
   const rclone_config_file = create_config_file(data);

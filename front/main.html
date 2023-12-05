@@ -13,9 +13,11 @@
 
     <div id="popupContainer" class="popup">
       <button onclick="closeForm()">Close</button>
-      <input type="text" placeholder="Name" autofocus />
-      <input type="text" placeholder="Email" />
-      <input type="text" placeholder="Phone" />
+      <input type="text" id="service-name" placeholder="service name" autofocus />
+      <input type="text" id="username" placeholder="username" />
+      <input type="text" id="password" placeholder="password" />
+      <input type="text" id="endpoint" placeholder="endpoint" />
+      <input type="file" id="file-input" style="display: none" />
       <button onclick="submitForm()">Submit</button>
     </div>
 
@@ -42,8 +44,6 @@
             <button id="create-service-btn" onclick="openForm()">
               + New Service
             </button>
-            <button id="run-rclone-btn">Run Rclone</button>
-            <input type="file" id="file-input" style="display: none" />
           </div>
         </header>
 

@@ -5,6 +5,10 @@ const submit_button = document.getElementById("submit-btn");
 const run_rclone_button = document.getElementById("run-rclone-btn");
 const services_table = document.getElementById("services-table");
 const file_input = document.getElementById("file-input");
+const service_name_input = document.getElementById("service-name");
+const username_input = document.getElementById("username");
+const password_input = document.getElementById("password");
+const endpoint_input = document.getElementById("endpoint");
 let rclone_path = "";
 
 let is_rclone_running = false;
@@ -73,21 +77,21 @@ function new_service_row(name, command, status) {
 
 file_input.addEventListener("change", () => {
   rclone_path = file_input.files[0].path;
-  IPCRenderer.send("rclone:start", { rclone_path });
+  submitForm();
 });
 
-run_rclone_button.addEventListener("click", function (event) {
-  if (is_rclone_running) {
-    IPCRenderer.send("rclone:stop", {});
-  } else {
-    if (rclone_path.length === 0) {
-      file_input.click();
-    } else {
-      IPCRenderer.send("rclone:start", { rclone_path });
-    }
-  }
-  is_rclone_running = !is_rclone_running;
-});
+// run_rclone_button.addEventListener("click", function (event) {
+//   if (is_rclone_running) {
+//     IPCRenderer.send("rclone:stop", {});
+//   } else {
+//     if (rclone_path.length === 0) {
+//       file_input.click();
+//     } else {
+//       IPCRenderer.send("rclone:start", { rclone_path });
+//     }
+//   }
+//   is_rclone_running = !is_rclone_running;
+// });
 
 function openForm() {
   var overlay = document.getElementById("overlay");
@@ -106,19 +110,29 @@ function closeForm() {
 }
 
 function submitForm() {
-  var name = document.querySelector(
-    '#popupContainer input[placeholder="Name"]'
-  ).value;
-  var email = document.querySelector(
-    '#popupContainer input[placeholder="Email"]'
-  ).value;
-  var phone = document.querySelector(
-    '#popupContainer input[placeholder="Phone"]'
-  ).value;
+  if (rclone_path.length === 0) {
+    file_input.click();
+    return;
+  }
 
-  console.log("Name:", name);
-  console.log("Email:", email);
-  console.log("Phone:", phone);
+  const username = username_input.value;
+  const password = password_input.value;
+  const endpoint = endpoint_input.value;
+  const service_name = service_name_input.value;
+
+  console.log("uesrname:", username);
+  console.log("password:", password);
+  console.log("endpoint:", endpoint);
+  console.log("service_name:", service_name);
+  console.log("rclone_path:", rclone_path);
+
+  IPCRenderer.send("rclone:start", {
+    rclone_path,
+    username,
+    password,
+    endpoint,
+    service_name,
+  });
 
   closeForm();
 }
