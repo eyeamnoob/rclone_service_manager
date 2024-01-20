@@ -13,7 +13,12 @@
 
     <div id="popupContainer" class="popup">
       <button onclick="closeForm()">Close</button>
-      <input type="text" id="service-name" placeholder="service name" autofocus />
+      <input
+        type="text"
+        id="service-name"
+        placeholder="service name"
+        autofocus
+      />
       <input type="text" id="username" placeholder="username" />
       <input type="text" id="password" placeholder="password" />
       <input type="text" id="endpoint" placeholder="endpoint" />
@@ -57,6 +62,8 @@
             <input type="checkbox" id="status" name="status" />
             <button id="submit-btn" type="submit">Submit</button>
           </form>
+          <p id="rclone-path" style="display: none">Using Rclone:</p>
+          <button onclick="reset_rclone_path()">Reset Rclone path</button>
           <table id="services-table">
             <thead>
               <tr>

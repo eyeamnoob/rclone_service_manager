@@ -3,6 +3,7 @@ const path = require("node:path");
 const { exec } = require("child_process");
 const fs = require("node:fs");
 const os = require("node:os");
+const { readJsonSync, writeJsonSync } = require("fs-extra");
 
 process.env.NODE_ENV = "dev";
 
@@ -11,6 +12,37 @@ const is_dev = process.env.NODE_ENV !== "production";
 const RESOURCES_PATH = is_dev ? __dirname : process.resourcesPath;
 
 let main_window;
+
+// globals
+const user_home_dir = os.homedir();
+const application_dir = user_home_dir + "\\rclone_service_manager";
+const application_conf_file =
+  application_dir + "\\thisapplicationconfigfile.conf";
+let rclone_path;
+let conf_data;
+
+function startup() {
+  fs.existsSync(application_dir) ||
+    fs.mkdirSync(application_dir, { recursive: true });
+
+  const conf_exists = fs.existsSync(application_conf_file);
+
+  if (conf_exists) {
+    conf_data = readJsonSync(application_conf_file);
+    rclone_path = conf_data.rclone_path;
+  } else {
+    conf_data = {};
+    writeJsonSync(application_conf_file, conf_data);
+  }
+}
+
+function update_application_conf(new_conf = {}) {
+  for (const conf in new_conf) {
+    conf_data[conf] = new_conf[conf];
+  }
+  console.log(conf_data);
+  writeJsonSync(application_conf_file, conf_data);
+}
 
 function check_rclone(callback) {
   const command =
@@ -62,11 +94,13 @@ async function create_main_window() {
 app.whenReady().then(async () => {
   await create_main_window();
 
+  startup();
+  if (rclone_path) {
+    main_window.webContents.send("rclone:path", { rclone_path });
+  }
+
   check_rclone((status) => {
     main_window.webContents.send("rclone:check", { status: status });
-  });
-  main_window.webContents.send("error", {
-    message: "hello from the back-end",
   });
 
   app.on("activate", () => {
@@ -95,8 +129,6 @@ function create_config_file(data) {
     return -1;
   }
 
-  const user_home_dir = os.homedir();
-  const application_dir = user_home_dir + "\\rclone_service_manager";
   fs.existsSync(application_dir) ||
     fs.mkdirSync(application_dir, { recursive: true });
 
@@ -110,16 +142,14 @@ function create_config_file(data) {
     .replace("{name}", endpoint)
     .replace("{username}", username)
     .replace("{password}", password)
-    .replace("{last_mode_date}", new Date());
+    .replace("{last_mod_date}", new Date());
 
-  fs.writeFile(config_file, ready_to_write);
+  fs.writeFileSync(config_file, ready_to_write);
 
   return config_file;
 }
 
 ipcMain.on("rclone:start", (e, data) => {
-  console.log(data);
-  return; // remember to delete these two lines.
   const script_path = path.join(RESOURCES_PATH, "scripts", "run_rclone.ps1");
   const rclone_log_file = `C:\\rclone_log_${new Date()}.txt`;
   const rclone_config_file = create_config_file(data);
@@ -137,9 +167,14 @@ ipcMain.on("rclone:start", (e, data) => {
     return;
   }
 
+  if (data.rclone_path !== rclone_path) {
+    rclone_path = data.rclone_path;
+    update_application_conf({ rclone_path });
+  }
+  return;
   const command = `$ErrorActionPreference = 'stop'
   try {
-      $output = Start-Process powershell -Verb RunAs -Wait -PassThru -WindowStyle Hidden -ArgumentList "-ExecutionPolicy Bypass -File ${script_path} ${data.rclone_path} ${rclone_log_file} ${rclone_config_file}"
+      $output = Start-Process powershell -Verb RunAs -Wait -PassThru -WindowStyle Hidden -ArgumentList "-ExecutionPolicy Bypass -File ${script_path} ${rclone_path} ${rclone_log_file} ${rclone_config_file}"
       if ($output.ExitCode -ne 0) {
           exit 1
       }

@@ -9,6 +9,7 @@ const service_name_input = document.getElementById("service-name");
 const username_input = document.getElementById("username");
 const password_input = document.getElementById("password");
 const endpoint_input = document.getElementById("endpoint");
+const rclone_path_txt = document.getElementById("rclone-path");
 let rclone_path = "";
 
 let is_rclone_running = false;
@@ -77,6 +78,8 @@ function new_service_row(name, command, status) {
 
 file_input.addEventListener("change", () => {
   rclone_path = file_input.files[0].path;
+  rclone_path_txt.innerText = "Using Rclone: " + rclone_path;
+  rclone_path_txt.style.display = "block";
   submitForm();
 });
 
@@ -135,6 +138,11 @@ function submitForm() {
   });
 
   closeForm();
+}
+
+function reset_rclone_path() {
+  rclone_path = "";
+  rclone_path_txt.style.display = "none";
 }
 
 IPCRenderer.on("rclone:started", () => {
@@ -207,4 +215,13 @@ IPCRenderer.on("error", (event, data) => {
       padding: "8px",
     },
   });
+});
+
+IPCRenderer.on("rclone:path", (event, data) => {
+  if (data.rclone_path) {
+    rclone_path = data.rclone_path;
+    rclone_path_txt.innerText = "Using Rclone: " + rclone_path;
+    rclone_path_txt.style.display = "block";
+  }
+  console.log("rclone path provided but it's empty");
 });
