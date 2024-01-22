@@ -4,6 +4,7 @@ const { exec } = require("child_process");
 const fs = require("node:fs");
 const os = require("node:os");
 const { readJsonSync, writeJsonSync } = require("fs-extra");
+const { randomUUID } = require("node:crypto");
 
 process.env.NODE_ENV = "dev";
 
@@ -129,6 +130,14 @@ function create_config_file(data) {
     return -1;
   }
 
+  if (
+    username.includes(" ") ||
+    password.includes(" ") ||
+    endpoint.includes(" ") ||
+    data.service_name.includes(" ")
+  ) {
+    return -2;
+  }
   fs.existsSync(application_dir) ||
     fs.mkdirSync(application_dir, { recursive: true });
 
@@ -151,7 +160,9 @@ function create_config_file(data) {
 
 ipcMain.on("rclone:start", (e, data) => {
   const script_path = path.join(RESOURCES_PATH, "scripts", "run_rclone.ps1");
-  const rclone_log_file = `C:\\rclone_log_${new Date()}.txt`;
+  const rclone_log_file = `C:\\rclone_log_${new Date()
+    .toISOString()
+    .replaceAll(":", "-")}.txt`;
   const rclone_config_file = create_config_file(data);
 
   if (rclone_config_file == 1) {
@@ -165,16 +176,24 @@ ipcMain.on("rclone:start", (e, data) => {
       message: "provide all required informations",
     });
     return;
+  } else if (rclone_config_file == -2) {
+    console.log("provided informations can't have spaces");
+    main_window.webContents.send("error", {
+      message: "provided informations can't have spaces",
+    });
+    return;
   }
 
   if (data.rclone_path !== rclone_path) {
     rclone_path = data.rclone_path;
     update_application_conf({ rclone_path });
   }
-  return;
+
+  const service_name = data.service_name;
+
   const command = `$ErrorActionPreference = 'stop'
   try {
-      $output = Start-Process powershell -Verb RunAs -Wait -PassThru -WindowStyle Hidden -ArgumentList "-ExecutionPolicy Bypass -File ${script_path} ${rclone_path} ${rclone_log_file} ${rclone_config_file}"
+      $output = Start-Process powershell -Verb RunAs -Wait -PassThru -WindowStyle Hidden -ArgumentList "-ExecutionPolicy Bypass -File ${script_path} ${rclone_path} ${rclone_log_file} ${rclone_config_file} ${data.endpoint} ${service_name}"
       if ($output.ExitCode -ne 0) {
           exit 1
       }
@@ -186,6 +205,9 @@ ipcMain.on("rclone:start", (e, data) => {
   exec(command, { shell: "powershell.exe" }, (error, stdout, stderr) => {
     if (error) {
       console.log(`Error on executing script: ${script_path}`);
+      main_window.webContents.send("error", {
+        message: "can not create service",
+      });
     } else {
       main_window.webContents.send("rclone:started");
     }

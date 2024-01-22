@@ -121,7 +121,11 @@ function submitForm() {
   const username = username_input.value;
   const password = password_input.value;
   const endpoint = endpoint_input.value;
-  const service_name = service_name_input.value;
+  let service_name = service_name_input.value;
+
+  if (!service_name) {
+    service_name = "Rclone" + crypto.randomUUID();
+  }
 
   console.log("uesrname:", username);
   console.log("password:", password);
@@ -222,6 +226,7 @@ IPCRenderer.on("rclone:path", (event, data) => {
     rclone_path = data.rclone_path;
     rclone_path_txt.innerText = "Using Rclone: " + rclone_path;
     rclone_path_txt.style.display = "block";
+  } else {
+    console.log("rclone path provided but it's empty");
   }
-  console.log("rclone path provided but it's empty");
 });
