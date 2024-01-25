@@ -16,30 +16,6 @@ let services = {};
 
 let is_rclone_running = false;
 
-// document.addEventListener("DOMContentLoaded", () => {
-//   submit_button.addEventListener("click", function (event) {
-//     event.preventDefault();
-
-//     const name_input = document.getElementById("name");
-//     const command_input = document.getElementById("command");
-//     const status_input = document.getElementById("status");
-
-//     const name = name_input.value;
-//     const command = command_input.value;
-//     const status = status_input.checked;
-
-//     IPCRenderer.send("service:create", { name, command, status });
-
-//     // new_service_row(name, command, status);
-
-//     name_input.value = "";
-//     command_input.value = "";
-//     status_input.checked = false;
-
-//     create_service_form.classList.add("hidden");
-//   });
-// });
-
 function new_service_row(name, command, status) {
   const new_row = document.createElement("tr");
 
@@ -62,17 +38,15 @@ function new_service_row(name, command, status) {
   toggle_status.textContent = "toggle status";
 
   const status_logo = document.createElement("i");
-  let status_text;
   if (status) {
     status_logo.classList = "fas fa-circle text-blue";
-    status_text = document.createTextNode(" running");
+    status_logo.innerText = "running";
   } else {
     status_logo.classList = "fas fa-circle text-red";
-    status_text = document.createTextNode(" stopped");
+    status_logo.innerText = "stopped";
   }
 
   status_cell.appendChild(status_logo);
-  status_cell.appendChild(status_text);
   status_cell.appendChild(toggle_status);
 
   new_row.appendChild(name_cell);
@@ -95,24 +69,12 @@ file_input.addEventListener("change", () => {
 });
 
 function toggle_rclone_status(service_name) {
+  console.log("hi i'm calling", service_name);
   IPCRenderer.send("rclone:toggle", {
     service_name,
     status: !services[service_name].status,
   });
 }
-
-// run_rclone_button.addEventListener("click", function (event) {
-//   if (is_rclone_running) {
-//     IPCRenderer.send("rclone:stop", {});
-//   } else {
-//     if (rclone_path.length === 0) {
-//       file_input.click();
-//     } else {
-//       IPCRenderer.send("rclone:start", { rclone_path });
-//     }
-//   }
-//   is_rclone_running = !is_rclone_running;
-// });
 
 function openForm() {
   var overlay = document.getElementById("overlay");
@@ -172,44 +134,34 @@ IPCRenderer.on("rclone:started", (e, data) => {
   for (let i = 0; i < rows.length; i++) {
     const row = rows[i];
     if (row.id === data.service_name) {
-      row.cells[2].innerHTML =
-        '<i class="fas fa-circle text-blue"></i> running';
+      const i_tag = row.querySelector("i");
+
+      i_tag.classList = "fas fa-circle text-blue";
+      i_tag.innerText = "running";
     }
   }
 
   services[data.service_name]["status"] = true;
 });
 
-IPCRenderer.on("rclone:stopped", () => {
-  console.log("rclone service stopped.");
-
-  run_rclone_button.innerText = "Run Rclone";
-  run_rclone_button.style.backgroundColor = "#4b84fe";
+IPCRenderer.on("rclone:toggled", (e, data) => {
+  const service_name = data.service_name;
+  const status = data.status;
 
   const rows = services_table.rows;
   for (let i = 0; i < rows.length; i++) {
     const row = rows[i];
-    if (row.id === "Rclone-service") {
-      row.cells[2].innerHTML = '<i class="fas fa-circle text-red"></i> stopped';
+    if (row.id === service_name) {
+      const i_tag = row.querySelector("i");
+
+      i_tag.classList = status
+        ? "fas fa-circle text-blue"
+        : "fas fa-circle text-red";
+      i_tag.innerText = status ? "running" : "stopped";
     }
   }
-});
 
-IPCRenderer.on("rclone:check", (event, data) => {
-  if (data.status === "running") {
-    is_rclone_running = true;
-    run_rclone_button.innerText = "Stop Rclone";
-    run_rclone_button.style.backgroundColor = "red";
-  } else if (data.status === "stopped") {
-    is_rclone_running = false;
-    run_rclone_button.innerText = "Run Rclone";
-    run_rclone_button.style.backgroundColor = "#4b84fe";
-  }
-  new_service_row(
-    "Rclone",
-    "rclone command",
-    data.status === "running" ? true : false
-  );
+  services[data.service_name]["status"] = status;
 });
 
 IPCRenderer.on("rclone:created", (event, data) => {

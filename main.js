@@ -119,7 +119,7 @@ app.whenReady().then(async () => {
     main_window.webContents.send("rclone:created", {
       service_name: service_name,
     });
-    if (service.status === "running") {
+    if (service.status) {
       main_window.webContents.send("rclone:started", {
         service_name: service_name,
       });
@@ -251,7 +251,7 @@ ipcMain.on("rclone:start", (e, data) => {
           log_file: rclone_log_file,
           rclone_path: rclone_path,
           end_point: data.endpoint,
-          status: "stopped",
+          status: false,
         };
         save_rclone_services();
       } else if (error.code === 0) {
@@ -269,7 +269,7 @@ ipcMain.on("rclone:start", (e, data) => {
           log_file: rclone_log_file,
           rclone_path: rclone_path,
           end_point: data.endpoint,
-          status: "running",
+          status: true,
         };
         save_rclone_services();
       } else {
@@ -293,7 +293,7 @@ ipcMain.on("rclone:start", (e, data) => {
         log_file: rclone_log_file,
         rclone_path: rclone_path,
         end_point: data.endpoint,
-        status: "running",
+        status: true,
       };
       save_rclone_services();
     }
@@ -304,78 +304,46 @@ ipcMain.on("rclone:toggle", (e, data) => {
   const service_name = data.service_name;
   const status = data.status;
 
-  if (data.status) {
-    // start service
-  } else {
-    const script_path = path.join(
-      RESOURCES_PATH,
-      "scripts",
-      "toggle_rclone.ps1"
-    );
-    const command = `Start-Process powershell -verb runas -WindowStyle Hidden -ArgumentList "-ExecutionPolicy Bypass -file ${script_path} ${service_name} ${status}"`;
-    exec(command, { shell: "powershell.exe" }, (error, stdout, stderr) => {
-      if (error) {
-        if (error.code === 0) {
-          main_window.webContents.send("rclone:toggled");
-          main_window.webContents.send("info", {
-            message: "service toggled",
-          });
-        } else if (error.code === -1) {
-          main_window.webContents.send("error", {
-            message: "can not stop service",
-          });
-        } else if (error.code === 1) {
-          main_window.webContents.send("error", {
-            message: "service does not exist",
-          });
-          // remember to delete service from front and backend
-        } else if (error.code === 2) {
-          main_window.webContents.send("error", {
-            message: "unknown status",
-          });
-        } else {
-          main_window.webContents.send("error", {
-            message: "unknown error",
-          });
-        }
-      } else {
-        main_window.webContents.send("rclone:toggled");
+  const script_path = path.join(RESOURCES_PATH, "scripts", "toggle_rclone.ps1");
+  const command = `Start-Process powershell -verb runas -WindowStyle Hidden -ArgumentList "-ExecutionPolicy Bypass -file ${script_path} ${service_name} ${status}"`;
+  exec(command, { shell: "powershell.exe" }, (error, stdout, stderr) => {
+    if (error) {
+      if (error.code === 0) {
+        rclone_services[service_name]["status"] = main_window.webContents.send(
+          "rclone:toggled",
+          {
+            service_name,
+            status,
+          }
+        );
         main_window.webContents.send("info", {
           message: "service toggled",
         });
+      } else if (error.code === -1) {
+        main_window.webContents.send("error", {
+          message: "can not toggle service",
+        });
+      } else if (error.code === 1) {
+        main_window.webContents.send("error", {
+          message: "service does not exist",
+        });
+        // remember to delete service from front and backend
+      } else if (error.code === 2) {
+        main_window.webContents.send("error", {
+          message: "unknown status",
+        });
+      } else {
+        main_window.webContents.send("error", {
+          message: "unknown error",
+        });
       }
-    });
-  }
-});
-
-ipcMain.on("service:create", (e, data) => {
-  const script_path = path.join(
-    RESOURCES_PATH,
-    "scripts",
-    "create_service.ps1"
-  );
-  const name = data.name;
-  const user_command = data.command;
-  const command = `$ErrorActionPreference = 'stop'
-  try {
-      $output = Start-Process powershell -Verb RunAs -Wait -PassThru -WindowStyle Hidden -ArgumentList "-ExecutionPolicy Bypass -File '${script_path}' '${name}' '${user_command}'"
-      if ($output.ExitCode -ne 0) {
-          exit 1
-      }
-      exit 0
-  }
-  catch {
-      exit 1
-  }`;
-  console.log(command);
-  exec(command, { shell: "powershell.exe" }, (error, stdout, stderr) => {
-    if (error) {
-      console.log(`Error on executing script: ${script_path}`);
     } else {
-      main_window.webContents.send("service:created", {
-        name,
-        command: user_command,
-        status: "stopped",
+      rclone_services[service_name]["status"] = main_window.webContents.send(
+        "rclone:toggled",
+        { service_name, status }
+      );
+      main_window.webContents.send("info", {
+        message: "service toggled",
       });
     }
   });
