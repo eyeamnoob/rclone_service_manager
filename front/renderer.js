@@ -12,6 +12,8 @@ const endpoint_input = document.getElementById("endpoint");
 const rclone_path_txt = document.getElementById("rclone-path");
 let rclone_path = "";
 
+let services = {};
+
 let is_rclone_running = false;
 
 // document.addEventListener("DOMContentLoaded", () => {
@@ -55,6 +57,10 @@ function new_service_row(name, command, status) {
 
   const status_cell = document.createElement("td");
 
+  const toggle_status = document.createElement("button");
+  toggle_status.addEventListener("click", () => toggle_rclone_status(name));
+  toggle_status.textContent = "toggle status";
+
   const status_logo = document.createElement("i");
   let status_text;
   if (status) {
@@ -67,6 +73,7 @@ function new_service_row(name, command, status) {
 
   status_cell.appendChild(status_logo);
   status_cell.appendChild(status_text);
+  status_cell.appendChild(toggle_status);
 
   new_row.appendChild(name_cell);
   new_row.appendChild(command_cell);
@@ -74,6 +81,10 @@ function new_service_row(name, command, status) {
 
   new_row.id = name;
   services_table_body.appendChild(new_row);
+
+  services[name] = {
+    status,
+  };
 }
 
 file_input.addEventListener("change", () => {
@@ -82,6 +93,13 @@ file_input.addEventListener("change", () => {
   rclone_path_txt.style.display = "block";
   submitForm();
 });
+
+function toggle_rclone_status(service_name) {
+  IPCRenderer.send("rclone:toggle", {
+    service_name,
+    status: !services[service_name].status,
+  });
+}
 
 // run_rclone_button.addEventListener("click", function (event) {
 //   if (is_rclone_running) {
@@ -150,9 +168,6 @@ function reset_rclone_path() {
 }
 
 IPCRenderer.on("rclone:started", (e, data) => {
-  run_rclone_button.innerText = "Stop Rclone";
-  run_rclone_button.style.backgroundColor = "red";
-
   const rows = services_table.rows;
   for (let i = 0; i < rows.length; i++) {
     const row = rows[i];
@@ -161,6 +176,8 @@ IPCRenderer.on("rclone:started", (e, data) => {
         '<i class="fas fa-circle text-blue"></i> running';
     }
   }
+
+  services[data.service_name]["status"] = true;
 });
 
 IPCRenderer.on("rclone:stopped", () => {

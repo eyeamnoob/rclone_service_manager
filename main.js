@@ -300,7 +300,9 @@ ipcMain.on("rclone:start", (e, data) => {
   });
 });
 
-ipcMain.on("rclone:stop", (e, data) => {
+ipcMain.on("rclone:toggle", (e, data) => {
+  console.log(data);
+  return;
   const script_path = path.join(RESOURCES_PATH, "scripts", "stop_rclone.ps1");
   const command = `Start-Process powershell -verb runas -WindowStyle Hidden -ArgumentList "-ExecutionPolicy Bypass -file ${script_path}"`;
   exec(command, { shell: "powershell.exe" }, (error, stdout, stderr) => {
