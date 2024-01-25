@@ -17,21 +17,32 @@ try {
     
     if ($null -ne $service) {
         Write-Output "Service exists." >> c:\users\ali\desktop\log.txt
+        
+        return -2
     }
     else {
         Write-Output "Service does not exist." >> c:\users\ali\desktop\log.txt
         Write-Output 'Creating Rclone service...' >> c:\users\ali\desktop\log.txt
-        New-Service -Name $($service_name) -BinaryPathName "$($rclone_path) mount $($rclone_endpoint): X: --config $($rclone_config_file) --log-file $($rclone_log_file)"
+        New-Service -Name $($service_name) -StartupType Manual -BinaryPathName "$($rclone_path) mount $($rclone_endpoint): * --config $($rclone_config_file) --log-file $($rclone_log_file)"
         Write-Output 'Rclone service created.' >> c:\users\ali\desktop\log.txt
     }
-    
+}
+catch {
+    Write-Output "can not create service $($service_name)"
+    Write-Output $_ >> C:\Users\ali\Desktop\log.txt
+
+    exit -1
+}
+try {
+
     Start-Service -Name $($service_name)
     Write-Output 'Rclone service is running.' >> c:\users\ali\desktop\log.txt
-    
+        
     exit 0
 }
 catch {
-    Write-Output "Can not create or start service." >> c:\users\ali\desktop\log.txt
+    Write-Output "Can not start service $($service_name)" >> c:\users\ali\desktop\log.txt
+    Write-Output $_ >> C:\Users\ali\Desktop\log.txt
     # sc.exe delete Rclone
     exit 1  
 }

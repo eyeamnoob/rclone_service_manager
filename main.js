@@ -4,7 +4,6 @@ const { exec } = require("child_process");
 const fs = require("node:fs");
 const os = require("node:os");
 const { readJsonSync, writeJsonSync } = require("fs-extra");
-const { randomUUID } = require("node:crypto");
 
 process.env.NODE_ENV = "dev";
 
@@ -19,14 +18,21 @@ const user_home_dir = os.homedir();
 const application_dir = user_home_dir + "\\rclone_service_manager";
 const application_conf_file =
   application_dir + "\\thisapplicationconfigfile.conf";
+const rclone_logs_dir = application_dir + "\\rclone_logs";
 let rclone_path;
 let conf_data;
+let rclone_services = {};
+const rclone_services_file = application_dir + "\\servicesconf.json";
 
 function startup() {
   fs.existsSync(application_dir) ||
     fs.mkdirSync(application_dir, { recursive: true });
 
+  fs.existsSync(rclone_logs_dir) ||
+    fs.mkdirSync(rclone_logs_dir, { recursive: true });
+
   const conf_exists = fs.existsSync(application_conf_file);
+  const services_exists = fs.existsSync(rclone_services_file);
 
   if (conf_exists) {
     conf_data = readJsonSync(application_conf_file);
@@ -34,6 +40,13 @@ function startup() {
   } else {
     conf_data = {};
     writeJsonSync(application_conf_file, conf_data);
+  }
+
+  if (services_exists) {
+    rclone_services = readJsonSync(rclone_services_file);
+  } else {
+    rclone_services = {};
+    writeJsonSync(rclone_services_file, rclone_services);
   }
 }
 
@@ -96,12 +109,21 @@ app.whenReady().then(async () => {
   await create_main_window();
 
   startup();
+
   if (rclone_path) {
     main_window.webContents.send("rclone:path", { rclone_path });
   }
 
-  check_rclone((status) => {
-    main_window.webContents.send("rclone:check", { status: status });
+  Object.keys(rclone_services).forEach((service_name) => {
+    const service = rclone_services[service_name];
+    main_window.webContents.send("rclone:created", {
+      service_name: service_name,
+    });
+    if (service.status === "running") {
+      main_window.webContents.send("rclone:started", {
+        service_name: service_name,
+      });
+    }
   });
 
   app.on("activate", () => {
@@ -158,11 +180,15 @@ function create_config_file(data) {
   return config_file;
 }
 
+function save_rclone_services() {
+  writeJsonSync(rclone_services_file, rclone_services);
+}
+
 ipcMain.on("rclone:start", (e, data) => {
   const script_path = path.join(RESOURCES_PATH, "scripts", "run_rclone.ps1");
-  const rclone_log_file = `C:\\rclone_log_${new Date()
-    .toISOString()
-    .replaceAll(":", "-")}.txt`;
+  const rclone_log_file = `${application_dir}\\rclone_logs\\${
+    data.endpoint
+  }_log_${new Date().toISOString().replaceAll(":", "-")}.txt`;
   const rclone_config_file = create_config_file(data);
 
   if (rclone_config_file == 1) {
@@ -170,6 +196,7 @@ ipcMain.on("rclone:start", (e, data) => {
     main_window.webContents.send("error", {
       message: "config file already exists",
     });
+    return;
   } else if (rclone_config_file == -1) {
     console.log("provide all required informations");
     main_window.webContents.send("error", {
@@ -194,22 +221,81 @@ ipcMain.on("rclone:start", (e, data) => {
   const command = `$ErrorActionPreference = 'stop'
   try {
       $output = Start-Process powershell -Verb RunAs -Wait -PassThru -WindowStyle Hidden -ArgumentList "-ExecutionPolicy Bypass -File ${script_path} ${rclone_path} ${rclone_log_file} ${rclone_config_file} ${data.endpoint} ${service_name}"
-      if ($output.ExitCode -ne 0) {
-          exit 1
-      }
-      exit 0
+      exit $output.ExitCode
   }
   catch {
-      exit 1
+    exit 100
   }`;
   exec(command, { shell: "powershell.exe" }, (error, stdout, stderr) => {
     if (error) {
-      console.log(`Error on executing script: ${script_path}`);
-      main_window.webContents.send("error", {
-        message: "can not create service",
-      });
+      if (error.code === -1) {
+        console.log(`Error on executing script: ${script_path}`);
+        main_window.webContents.send("error", {
+          message: `can not create service ${service_name}`,
+        });
+      } else if (error.code === -2) {
+        console.log(`Error on executing script: ${script_path}`);
+        main_window.webContents.send("error", {
+          message: `service with name ${service_name} already exists`,
+        });
+      } else if (error.code === 1) {
+        console.log(`Error on executing script: ${script_path}`);
+        main_window.webContents.send("rclone:created", {
+          service_name: service_name,
+        });
+        main_window.webContents.send("error", {
+          message: `can not start service ${service_name}`,
+        });
+        rclone_services[service_name] = {
+          config_file: rclone_config_file,
+          log_file: rclone_log_file,
+          rclone_path: rclone_path,
+          end_point: data.endpoint,
+          status: "stopped",
+        };
+        save_rclone_services();
+      } else if (error.code === 0) {
+        main_window.webContents.send("rclone:created", {
+          service_name: service_name,
+        });
+        main_window.webContents.send("info", {
+          message: `service ${service_name} started`,
+        });
+        main_window.webContents.send("rclone:started", {
+          service_name: service_name,
+        });
+        rclone_services[service_name] = {
+          config_file: rclone_config_file,
+          log_file: rclone_log_file,
+          rclone_path: rclone_path,
+          end_point: data.endpoint,
+          status: "running",
+        };
+        save_rclone_services();
+      } else {
+        console.log(`unknown error on script: ${script_path}`);
+        main_window.webContents.send("error", {
+          message: "unknown error",
+        });
+      }
     } else {
-      main_window.webContents.send("rclone:started");
+      main_window.webContents.send("rclone:created", {
+        service_name: service_name,
+      });
+      main_window.webContents.send("info", {
+        message: `service ${service_name} started`,
+      });
+      main_window.webContents.send("rclone:started", {
+        service_name: service_name,
+      });
+      rclone_services[service_name] = {
+        config_file: rclone_config_file,
+        log_file: rclone_log_file,
+        rclone_path: rclone_path,
+        end_point: data.endpoint,
+        status: "running",
+      };
+      save_rclone_services();
     }
   });
 });

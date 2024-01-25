@@ -72,7 +72,7 @@ function new_service_row(name, command, status) {
   new_row.appendChild(command_cell);
   new_row.appendChild(status_cell);
 
-  new_row.id = name + "-service";
+  new_row.id = name;
   services_table_body.appendChild(new_row);
 }
 
@@ -149,16 +149,14 @@ function reset_rclone_path() {
   rclone_path_txt.style.display = "none";
 }
 
-IPCRenderer.on("rclone:started", () => {
-  console.log("rclone service started.");
-
+IPCRenderer.on("rclone:started", (e, data) => {
   run_rclone_button.innerText = "Stop Rclone";
   run_rclone_button.style.backgroundColor = "red";
 
   const rows = services_table.rows;
   for (let i = 0; i < rows.length; i++) {
     const row = rows[i];
-    if (row.id === "Rclone-service") {
+    if (row.id === data.service_name) {
       row.cells[2].innerHTML =
         '<i class="fas fa-circle text-blue"></i> running';
     }
@@ -197,12 +195,8 @@ IPCRenderer.on("rclone:check", (event, data) => {
   );
 });
 
-IPCRenderer.on("service:created", (event, data) => {
-  new_service_row(
-    data.name,
-    data.command,
-    data.status === "running" ? true : false
-  );
+IPCRenderer.on("rclone:created", (event, data) => {
+  new_service_row(data.service_name, "rclone mount", false);
 });
 
 IPCRenderer.on("error", (event, data) => {
@@ -213,6 +207,22 @@ IPCRenderer.on("error", (event, data) => {
     stopOnFocus: true,
     style: {
       background: "red",
+      color: "white",
+      textAlign: "center",
+      fontSize: "16px",
+      padding: "8px",
+    },
+  });
+});
+
+IPCRenderer.on("info", (event, data) => {
+  Toastify.toast({
+    text: data.message,
+    duration: 5000,
+    close: false,
+    stopOnFocus: true,
+    style: {
+      background: "green",
       color: "white",
       textAlign: "center",
       fontSize: "16px",
