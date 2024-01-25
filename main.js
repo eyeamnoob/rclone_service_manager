@@ -301,17 +301,51 @@ ipcMain.on("rclone:start", (e, data) => {
 });
 
 ipcMain.on("rclone:toggle", (e, data) => {
-  console.log(data);
-  return;
-  const script_path = path.join(RESOURCES_PATH, "scripts", "stop_rclone.ps1");
-  const command = `Start-Process powershell -verb runas -WindowStyle Hidden -ArgumentList "-ExecutionPolicy Bypass -file ${script_path}"`;
-  exec(command, { shell: "powershell.exe" }, (error, stdout, stderr) => {
-    if (error) {
-      console.log("Error on executing script", error);
-    } else {
-      main_window.webContents.send("rclone:stopped");
-    }
-  });
+  const service_name = data.service_name;
+  const status = data.status;
+
+  if (data.status) {
+    // start service
+  } else {
+    const script_path = path.join(
+      RESOURCES_PATH,
+      "scripts",
+      "toggle_rclone.ps1"
+    );
+    const command = `Start-Process powershell -verb runas -WindowStyle Hidden -ArgumentList "-ExecutionPolicy Bypass -file ${script_path} ${service_name} ${status}"`;
+    exec(command, { shell: "powershell.exe" }, (error, stdout, stderr) => {
+      if (error) {
+        if (error.code === 0) {
+          main_window.webContents.send("rclone:toggled");
+          main_window.webContents.send("info", {
+            message: "service toggled",
+          });
+        } else if (error.code === -1) {
+          main_window.webContents.send("error", {
+            message: "can not stop service",
+          });
+        } else if (error.code === 1) {
+          main_window.webContents.send("error", {
+            message: "service does not exist",
+          });
+          // remember to delete service from front and backend
+        } else if (error.code === 2) {
+          main_window.webContents.send("error", {
+            message: "unknown status",
+          });
+        } else {
+          main_window.webContents.send("error", {
+            message: "unknown error",
+          });
+        }
+      } else {
+        main_window.webContents.send("rclone:toggled");
+        main_window.webContents.send("info", {
+          message: "service toggled",
+        });
+      }
+    });
+  }
 });
 
 ipcMain.on("service:create", (e, data) => {
