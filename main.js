@@ -50,6 +50,14 @@ function startup() {
   }
 }
 
+function remove_rclone(service_name) {
+  if (service_name in rclone_services) {
+    delete rclone_services[service_name];
+    fs.existsSync(application_dir + `\\${service_name}.conf`) &&
+      fs.rmSync(application_dir + `\\${service_name}.conf`);
+  }
+}
+
 function update_application_conf(new_conf = {}) {
   for (const conf in new_conf) {
     conf_data[conf] = new_conf[conf];
@@ -305,17 +313,22 @@ ipcMain.on("rclone:toggle", (e, data) => {
   const status = data.status;
 
   const script_path = path.join(RESOURCES_PATH, "scripts", "toggle_rclone.ps1");
-  const command = `Start-Process powershell -verb runas -WindowStyle Hidden -ArgumentList "-ExecutionPolicy Bypass -file ${script_path} ${service_name} ${status}"`;
+  const command = `$ErrorActionPreference = 'stop'
+  try {
+      $output = Start-Process powershell -Verb RunAs -Wait -PassThru -WindowStyle Hidden -ArgumentList "-ExecutionPolicy Bypass -File ${script_path} ${service_name} ${status}"
+      exit $output.ExitCode
+  }
+  catch {
+    exit 100
+  }`;
   exec(command, { shell: "powershell.exe" }, (error, stdout, stderr) => {
     if (error) {
       if (error.code === 0) {
-        rclone_services[service_name]["status"] = main_window.webContents.send(
-          "rclone:toggled",
-          {
-            service_name,
-            status,
-          }
-        );
+        rclone_services[service_name]["status"] = status;
+        main_window.webContents.send("rclone:toggled", {
+          service_name,
+          status,
+        });
         main_window.webContents.send("info", {
           message: "service toggled",
         });
@@ -327,7 +340,14 @@ ipcMain.on("rclone:toggle", (e, data) => {
         main_window.webContents.send("error", {
           message: "service does not exist",
         });
-        // remember to delete service from front and backend
+        main_window.webContents.send("rclone:removed", {
+          service_name,
+        });
+        main_window.webContents.send("info", {
+          message: "service removed",
+        });
+        remove_rclone(service_name);
+        save_rclone_services();
       } else if (error.code === 2) {
         main_window.webContents.send("error", {
           message: "unknown status",
@@ -338,13 +358,65 @@ ipcMain.on("rclone:toggle", (e, data) => {
         });
       }
     } else {
-      rclone_services[service_name]["status"] = main_window.webContents.send(
-        "rclone:toggled",
-        { service_name, status }
-      );
+      rclone_services[service_name]["status"] = status;
+      main_window.webContents.send("rclone:toggled", { service_name, status });
       main_window.webContents.send("info", {
         message: "service toggled",
       });
+    }
+  });
+});
+
+ipcMain.on("rclone:remove", (e, data) => {
+  const service_name = data.service_name;
+
+  const script_path = path.join(RESOURCES_PATH, "scripts", "remove_rclone.ps1");
+  const command = `$ErrorActionPreference = 'stop'
+  try {
+      $output = Start-Process powershell -Verb RunAs -Wait -PassThru -WindowStyle Hidden -ArgumentList "-ExecutionPolicy Bypass -File ${script_path} ${service_name}"
+      exit $output.ExitCode
+  }
+  catch {
+    exit 100
+  }`;
+  exec(command, { shell: "powershell.exe" }, (error, stdout, stderr) => {
+    if (error) {
+      if (error.code === 0) {
+        main_window.webContents.send("rclone:removed", {
+          service_name,
+        });
+        main_window.webContents.send("info", {
+          message: "service removed",
+        });
+        remove_rclone(service_name);
+        save_rclone_services();
+      } else if (error.code === -1) {
+        main_window.webContents.send("error", {
+          message: "service does not exist",
+        });
+        main_window.webContents.send("rclone:removed", {
+          service_name,
+        });
+        remove_rclone(service_name);
+        save_rclone_services();
+      } else if (error.code === 1) {
+        main_window.webContents.send("error", {
+          message: "can not delete service",
+        });
+      } else {
+        main_window.webContents.send("error", {
+          message: "unknown error",
+        });
+      }
+    } else {
+      main_window.webContents.send("rclone:removed", {
+        service_name,
+      });
+      main_window.webContents.send("info", {
+        message: "service removed",
+      });
+      remove_rclone(service_name);
+      save_rclone_services();
     }
   });
 });

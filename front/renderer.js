@@ -37,6 +37,12 @@ function new_service_row(name, command, status) {
   toggle_status.addEventListener("click", () => toggle_rclone_status(name));
   toggle_status.textContent = "toggle status";
 
+  const rm_rclone_button = document.createElement("button");
+  rm_rclone_button.addEventListener("click", () =>
+    remove_rclone_listener(name)
+  );
+  rm_rclone_button.textContent = "remove";
+
   const status_logo = document.createElement("i");
   if (status) {
     status_logo.classList = "fas fa-circle text-blue";
@@ -48,6 +54,7 @@ function new_service_row(name, command, status) {
 
   status_cell.appendChild(status_logo);
   status_cell.appendChild(toggle_status);
+  status_cell.appendChild(rm_rclone_button);
 
   new_row.appendChild(name_cell);
   new_row.appendChild(command_cell);
@@ -69,10 +76,15 @@ file_input.addEventListener("change", () => {
 });
 
 function toggle_rclone_status(service_name) {
-  console.log("hi i'm calling", service_name);
   IPCRenderer.send("rclone:toggle", {
     service_name,
     status: !services[service_name].status,
+  });
+}
+
+function remove_rclone_listener(service_name) {
+  IPCRenderer.send("rclone:remove", {
+    service_name,
   });
 }
 
@@ -129,6 +141,17 @@ function reset_rclone_path() {
   rclone_path_txt.style.display = "none";
 }
 
+function remove_rclone(service_name) {
+  if (service_name in services) {
+    delete services[service_name];
+
+    const service_row = document.getElementById(service_name);
+    if (service_row) {
+      services_table_body.removeChild(service_row);
+    }
+  }
+}
+
 IPCRenderer.on("rclone:started", (e, data) => {
   const rows = services_table.rows;
   for (let i = 0; i < rows.length; i++) {
@@ -166,6 +189,10 @@ IPCRenderer.on("rclone:toggled", (e, data) => {
 
 IPCRenderer.on("rclone:created", (event, data) => {
   new_service_row(data.service_name, "rclone mount", false);
+});
+
+IPCRenderer.on("rclone:removed", (event, data) => {
+  remove_rclone(data.service_name);
 });
 
 IPCRenderer.on("error", (event, data) => {

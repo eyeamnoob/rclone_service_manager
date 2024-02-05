@@ -23,20 +23,20 @@ try {
         else {
             Write-Output "unknown status." >> C:\Users\ali\Desktop\log.txt
 
-            exit 2
+            return 2
         }
 
-        exit 0
+        return 0
     }
     else {
         Write-Output "Service does not exist." >> C:\Users\ali\Desktop\log.txt
 
-        exit 1
+        return 1
     }
 }
 catch {
     Write-Output "can not stop service" >> C:\Users\ali\Desktop\log.txt
     Write-Output $_ >> C:\Users\ali\Desktop\log.txt
 
-    exit -1
+    return -1
 }

@@ -31,18 +31,18 @@ catch {
     Write-Output "can not create service $($service_name)"
     Write-Output $_ >> C:\Users\ali\Desktop\log.txt
 
-    exit -1
+    return -1
 }
 try {
 
     Start-Service -Name $($service_name)
     Write-Output 'Rclone service is running.' >> c:\users\ali\desktop\log.txt
         
-    exit 0
+    return 0
 }
 catch {
     Write-Output "Can not start service $($service_name)" >> c:\users\ali\desktop\log.txt
     Write-Output $_ >> C:\Users\ali\Desktop\log.txt
     # sc.exe delete Rclone
-    exit 1  
+    return 1  
 }
