@@ -9,6 +9,7 @@ const service_name_input = document.getElementById("service-name");
 const username_input = document.getElementById("username");
 const password_input = document.getElementById("password");
 const endpoint_input = document.getElementById("endpoint");
+const extra_args_input = document.getElementById("extraargs");
 const rclone_path_txt = document.getElementById("rclone-path");
 let rclone_path = "";
 
@@ -114,11 +115,13 @@ function submitForm() {
   const password = password_input.value;
   const endpoint = endpoint_input.value;
   let service_name = service_name_input.value;
+  const extra_args = extra_args_input.value;
 
   username_input.value = "";
   password_input.value = "";
   endpoint_input.value = "";
   service_name_input.value = "";
+  extra_args_input.value = "";
 
   if (!service_name) {
     service_name = "Rclone" + crypto.randomUUID();
@@ -130,6 +133,7 @@ function submitForm() {
     password,
     endpoint,
     service_name,
+    extra_args,
   });
 
   closeForm();

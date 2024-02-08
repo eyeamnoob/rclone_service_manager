@@ -79,24 +79,26 @@ function update_application_conf(new_conf = {}) {
 
 function check_rclone(service_name) {
   const command = `Get-Service -Name ${service_name} -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Status`;
-  const output = execSync(command, { shell: "powershell.exe" });
-
-  const stdout = output.toString();
-  if (stdout.trim().length > 0) {
-    if (stdout.trim() === "Running") {
-      rclone_services[service_name].status = true;
-      main_window.webContents.send("rclone:toggled", {
-        service_name,
-        status: true,
-      });
-    } else if (stdout.trim() === "Stopped") {
-      rclone_services[service_name].status = false;
-      main_window.webContents.send("rclone:toggled", {
-        service_name,
-        status: false,
-      });
+  let output = "";
+  try {
+    output = execSync(command, { shell: "powershell.exe" });
+    const stdout = output.toString();
+    if (stdout.trim().length > 0) {
+      if (stdout.trim() === "Running") {
+        rclone_services[service_name].status = true;
+        main_window.webContents.send("rclone:toggled", {
+          service_name,
+          status: true,
+        });
+      } else if (stdout.trim() === "Stopped") {
+        rclone_services[service_name].status = false;
+        main_window.webContents.send("rclone:toggled", {
+          service_name,
+          status: false,
+        });
+      }
     }
-  } else {
+  } catch {
     remove_rclone(service_name);
     main_window.webContents.send("rclone:removed", {
       service_name,
@@ -234,10 +236,11 @@ ipcMain.on("rclone:start", (e, data) => {
   }
 
   const service_name = data.service_name;
+  const extra_args = data.extra_args.trim();
 
   const command = `$ErrorActionPreference = 'stop'
   try {
-      $output = Start-Process powershell -Verb RunAs -Wait -PassThru -WindowStyle Hidden -ArgumentList "-ExecutionPolicy Bypass -File ${script_path} ${rclone_path} ${rclone_log_file} ${rclone_config_file} ${data.endpoint} ${service_name}"
+      $output = Start-Process powershell -Verb RunAs -Wait -PassThru -WindowStyle Hidden -ArgumentList "-ExecutionPolicy Bypass -File ${script_path} ${rclone_path} ${rclone_log_file} ${rclone_config_file} ${data.endpoint} ${service_name} ${extra_args}"
       exit $output.ExitCode
   }
   catch {
@@ -250,16 +253,19 @@ ipcMain.on("rclone:start", (e, data) => {
         main_window.webContents.send("error", {
           message: `can not create service ${service_name}`,
         });
+        fs.rmSync(rclone_config_file);
       } else if (error.code === -2) {
         console.log(`Error on executing script: ${script_path}`);
         main_window.webContents.send("error", {
           message: `service with name ${service_name} already exists`,
         });
+        fs.rmSync(rclone_config_file);
       } else if (error.code === 1) {
         console.log(`Error on executing script: ${script_path}`);
         main_window.webContents.send("rclone:created", {
           service_name: service_name,
         });
+        fs.rmSync(rclone_config_file);
         main_window.webContents.send("error", {
           message: `can not start service ${service_name}`,
         });
@@ -295,6 +301,7 @@ ipcMain.on("rclone:start", (e, data) => {
         main_window.webContents.send("error", {
           message: "unknown error",
         });
+        fs.rmSync(rclone_config_file);
       }
     } else {
       main_window.webContents.send("rclone:created", {
