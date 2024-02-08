@@ -151,21 +151,6 @@ function remove_rclone(service_name) {
   }
 }
 
-IPCRenderer.on("rclone:started", (e, data) => {
-  const rows = services_table.rows;
-  for (let i = 0; i < rows.length; i++) {
-    const row = rows[i];
-    if (row.id === data.service_name) {
-      const i_tag = row.querySelector("i");
-
-      i_tag.classList = "fas fa-circle text-blue";
-      i_tag.innerText = "running";
-    }
-  }
-
-  services[data.service_name]["status"] = true;
-});
-
 IPCRenderer.on("rclone:toggled", (e, data) => {
   const service_name = data.service_name;
   const status = data.status;

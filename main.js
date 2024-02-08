@@ -1,6 +1,6 @@
 const { app, BrowserWindow, ipcMain } = require("electron");
 const path = require("node:path");
-const { exec } = require("child_process");
+const { exec, execSync } = require("node:child_process");
 const fs = require("node:fs");
 const os = require("node:os");
 const { readJsonSync, writeJsonSync } = require("fs-extra");
@@ -67,30 +67,31 @@ function update_application_conf(new_conf = {}) {
   writeJsonSync(application_conf_file, conf_data);
 }
 
-function check_rclone(callback) {
-  const command =
-    "Get-Service -Name Rclone -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Status";
-  const output = exec(
-    command,
-    { shell: "powershell.exe" },
-    (error, stdout, stderr) => {
-      if (error) {
-        callback("stopped");
-      } else {
-        if (stdout.trim().length > 0) {
-          if (stdout.trim() === "Running") {
-            callback("running");
-          } else if (stdout.trim() === "Stopped") {
-            callback("stopped");
-          } else {
-            callback("stopped");
-          }
-        } else {
-          callback("stopped");
-        }
-      }
+function check_rclone(service_name) {
+  const command = `Get-Service -Name ${service_name} -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Status`;
+  const output = execSync(command, { shell: "powershell.exe" });
+
+  const stdout = output.toString();
+  if (stdout.trim().length > 0) {
+    if (stdout.trim() === "Running") {
+      rclone_services[service_name].status = true;
+      main_window.webContents.send("rclone:toggled", {
+        service_name,
+        status: true,
+      });
+    } else if (stdout.trim() === "Stopped") {
+      rclone_services[service_name].status = false;
+      main_window.webContents.send("rclone:toggled", {
+        service_name,
+        status: false,
+      });
     }
-  );
+  } else {
+    remove_rclone(service_name);
+    main_window.webContents.send("rclone:removed", {
+      service_name,
+    });
+  }
 }
 
 async function create_main_window() {
@@ -124,16 +125,13 @@ app.whenReady().then(async () => {
   }
 
   Object.keys(rclone_services).forEach((service_name) => {
-    const service = rclone_services[service_name];
     main_window.webContents.send("rclone:created", {
       service_name: service_name,
     });
-    if (service.status) {
-      main_window.webContents.send("rclone:started", {
-        service_name: service_name,
-      });
-    }
+    check_rclone(service_name);
   });
+
+  save_rclone_services();
 
   app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) {
@@ -270,8 +268,9 @@ ipcMain.on("rclone:start", (e, data) => {
         main_window.webContents.send("info", {
           message: `service ${service_name} started`,
         });
-        main_window.webContents.send("rclone:started", {
-          service_name: service_name,
+        main_window.webContents.send("rclone:toggled", {
+          service_name,
+          status: true,
         });
         rclone_services[service_name] = {
           config_file: rclone_config_file,
@@ -294,8 +293,9 @@ ipcMain.on("rclone:start", (e, data) => {
       main_window.webContents.send("info", {
         message: `service ${service_name} started`,
       });
-      main_window.webContents.send("rclone:started", {
-        service_name: service_name,
+      main_window.webContents.send("rclone:toggled", {
+        service_name,
+        status: true,
       });
       rclone_services[service_name] = {
         config_file: rclone_config_file,
@@ -365,6 +365,7 @@ ipcMain.on("rclone:toggle", (e, data) => {
         message: "service toggled",
       });
     }
+    save_rclone_services();
   });
 });
 
