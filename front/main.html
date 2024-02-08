@@ -22,7 +22,11 @@
       <input type="text" id="username" placeholder="username" />
       <input type="password" id="password" placeholder="password" />
       <input type="text" id="endpoint" placeholder="endpoint" />
-      <input type="text" id="extraargs" placeholder="ex: --flag arg1" />
+      <input
+        type="text"
+        id="extraargs"
+        placeholder="extra args ex: --flag arg1"
+      />
       <input type="file" id="file-input" style="display: none" />
       <button onclick="submitForm()">Submit</button>
     </div>
@@ -57,8 +61,8 @@
           <form id="create-service-form" class="hidden">
             <label for="name">Name</label>
             <input type="text" id="name" name="name" />
-            <label for="command">Command</label>
-            <input type="text" id="command" name="command" />
+            <label for="endpoint">Endpoint</label>
+            <input type="text" id="endpoint" name="endpoint" />
             <label for="status">Run now</label>
             <input type="checkbox" id="status" name="status" />
             <button id="submit-btn" type="submit">Submit</button>
@@ -69,7 +73,7 @@
             <thead>
               <tr>
                 <th>Service Name</th>
-                <th>Command</th>
+                <th>Endpoint</th>
                 <th>Status</th>
               </tr>
             </thead>

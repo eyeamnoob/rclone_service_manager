@@ -15,9 +15,9 @@ let rclone_path = "";
 
 let services = {};
 
-let is_rclone_running = false;
+let update = false;
 
-function new_service_row(name, command, status) {
+function new_service_row(name, endpoint, status) {
   const new_row = document.createElement("tr");
 
   const name_cell = document.createElement("td");
@@ -26,11 +26,11 @@ function new_service_row(name, command, status) {
 
   name_cell.appendChild(name_text);
 
-  const command_cell = document.createElement("td");
+  const endpoint_cell = document.createElement("td");
 
-  command_text = document.createTextNode(` ${command}`);
+  endpoint_text = document.createTextNode(` ${endpoint}`);
 
-  command_cell.appendChild(command_text);
+  endpoint_cell.appendChild(endpoint_text);
 
   const status_cell = document.createElement("td");
 
@@ -44,6 +44,12 @@ function new_service_row(name, command, status) {
   );
   rm_rclone_button.textContent = "remove";
 
+  const update_rclone_button = document.createElement("button");
+  update_rclone_button.addEventListener("click", () =>
+    update_rclone_listener(name)
+  );
+  update_rclone_button.textContent = "update";
+
   const status_logo = document.createElement("i");
   if (status) {
     status_logo.classList = "fas fa-circle text-blue";
@@ -56,9 +62,10 @@ function new_service_row(name, command, status) {
   status_cell.appendChild(status_logo);
   status_cell.appendChild(toggle_status);
   status_cell.appendChild(rm_rclone_button);
+  status_cell.appendChild(update_rclone_button);
 
   new_row.appendChild(name_cell);
-  new_row.appendChild(command_cell);
+  new_row.appendChild(endpoint_cell);
   new_row.appendChild(status_cell);
 
   new_row.id = name;
@@ -66,7 +73,29 @@ function new_service_row(name, command, status) {
 
   services[name] = {
     status,
+    endpoint,
   };
+}
+
+function update_rclone_listener(service_name) {
+  if (services[service_name].status) {
+    Toastify.toast({
+      text: "First, please turn off service.",
+      duration: 5000,
+      close: false,
+      stopOnFocus: true,
+      style: {
+        background: "red",
+        color: "white",
+        textAlign: "center",
+        fontSize: "16px",
+        padding: "8px",
+      },
+    });
+
+    return;
+  }
+  openForm(service_name);
 }
 
 file_input.addEventListener("change", () => {
@@ -89,12 +118,30 @@ function remove_rclone_listener(service_name) {
   });
 }
 
-function openForm() {
+function openForm(service_name = "") {
   var overlay = document.getElementById("overlay");
   var popup = document.getElementById("popupContainer");
 
   overlay.style.display = "block";
   popup.style.display = "block";
+
+  if (service_name !== "") {
+    const endpoint = services[service_name].endpoint;
+    service_name_input.value = service_name;
+    endpoint_input.value = endpoint;
+
+    service_name_input.disabled = true;
+    endpoint_input.disabled = true;
+    extra_args_input.disabled = true;
+
+    update = true;
+  } else {
+    service_name_input.disabled = false;
+    endpoint_input.disabled = false;
+    extra_args_input.disabled = false;
+
+    update = false;
+  }
 }
 
 function closeForm() {
@@ -134,6 +181,7 @@ function submitForm() {
     endpoint,
     service_name,
     extra_args,
+    update,
   });
 
   closeForm();
@@ -176,7 +224,8 @@ IPCRenderer.on("rclone:toggled", (e, data) => {
 });
 
 IPCRenderer.on("rclone:created", (event, data) => {
-  new_service_row(data.service_name, "rclone mount", false);
+  console.log(data.endpoint);
+  new_service_row(data.service_name, data.endpoint, false);
 });
 
 IPCRenderer.on("rclone:removed", (event, data) => {

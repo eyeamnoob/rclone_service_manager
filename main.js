@@ -139,6 +139,7 @@ app.whenReady().then(async () => {
   Object.keys(rclone_services).forEach((service_name) => {
     main_window.webContents.send("rclone:created", {
       service_name,
+      endpoint: rclone_services[service_name].endpoint,
     });
     check_rclone(service_name);
   });
@@ -166,6 +167,7 @@ function create_config_file(data) {
   const username = data.username;
   const password = data.password;
   const endpoint = data.endpoint;
+  const update = data.update;
 
   if (!username || !password || !endpoint) {
     return -1;
@@ -184,7 +186,7 @@ function create_config_file(data) {
 
   const config_file = application_dir + `\\${endpoint}.conf`;
 
-  if (fs.existsSync(config_file)) {
+  if (fs.existsSync(config_file) && !update) {
     return 1; // config file exists. so we need to use it or overwrite it.
   }
 
@@ -243,6 +245,42 @@ ipcMain.on("rclone:start", (e, data) => {
 
   const service_name = data.service_name;
   const extra_args = shell_escape(data.extra_args.trim());
+  const update = data.update;
+
+  if (update) {
+    if (service_name in rclone_services) {
+      if (rclone_services[service_name].status) {
+        main_window.webContents.send("error", {
+          message: "First, please turn off service.",
+        });
+      } else {
+        rclone_services[service_name] = {
+          config_file: rclone_config_file,
+          log_file: rclone_log_file,
+          rclone_path: rclone_path,
+          endpoint: data.endpoint,
+          status: false,
+        };
+        save_rclone_services();
+
+        main_window.webContents.send("info", {
+          message: "Service has been updated.",
+        });
+      }
+    } else {
+      remove_rclone(service_name);
+      save_rclone_services();
+
+      main_window.webContents.send("error", {
+        message: "Service does not exist.",
+      });
+      main_window.webContents.send("rclone:removed", {
+        service_name,
+      });
+    }
+
+    return;
+  }
 
   const command = `$ErrorActionPreference = 'stop'
   try {
@@ -269,7 +307,8 @@ ipcMain.on("rclone:start", (e, data) => {
       } else if (error.code === 1) {
         console.log(`Error on executing script: ${script_path}`);
         main_window.webContents.send("rclone:created", {
-          service_name: service_name,
+          service_name,
+          endpoint: data.endpoint,
         });
         fs.rmSync(rclone_config_file);
         main_window.webContents.send("error", {
@@ -279,13 +318,14 @@ ipcMain.on("rclone:start", (e, data) => {
           config_file: rclone_config_file,
           log_file: rclone_log_file,
           rclone_path: rclone_path,
-          end_point: data.endpoint,
+          endpoint: data.endpoint,
           status: false,
         };
         save_rclone_services();
       } else if (error.code === 0) {
         main_window.webContents.send("rclone:created", {
-          service_name: service_name,
+          service_name,
+          endpoint: data.endpoint,
         });
         main_window.webContents.send("info", {
           message: `service ${service_name} started`,
@@ -298,7 +338,7 @@ ipcMain.on("rclone:start", (e, data) => {
           config_file: rclone_config_file,
           log_file: rclone_log_file,
           rclone_path: rclone_path,
-          end_point: data.endpoint,
+          endpoint: data.endpoint,
           status: true,
         };
         save_rclone_services();
@@ -311,7 +351,8 @@ ipcMain.on("rclone:start", (e, data) => {
       }
     } else {
       main_window.webContents.send("rclone:created", {
-        service_name: service_name,
+        service_name,
+        endpoint: data.endpoint,
       });
       main_window.webContents.send("info", {
         message: `service ${service_name} started`,
@@ -324,7 +365,7 @@ ipcMain.on("rclone:start", (e, data) => {
         config_file: rclone_config_file,
         log_file: rclone_log_file,
         rclone_path: rclone_path,
-        end_point: data.endpoint,
+        endpoint: data.endpoint,
         status: true,
       };
       save_rclone_services();
