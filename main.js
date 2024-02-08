@@ -235,8 +235,14 @@ ipcMain.on("rclone:start", (e, data) => {
     update_application_conf({ rclone_path });
   }
 
+  const shell_escape = (arg) => {
+    if (/[^A-Za-z0-9_\/:=-]/.test(arg))
+      return arg.replace(/([$!"();`*?{}[\]<>&%#~@\\])/g, "\\`$1");
+    return arg;
+  };
+
   const service_name = data.service_name;
-  const extra_args = data.extra_args.trim();
+  const extra_args = shell_escape(data.extra_args.trim());
 
   const command = `$ErrorActionPreference = 'stop'
   try {
