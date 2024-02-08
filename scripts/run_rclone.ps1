@@ -23,7 +23,7 @@ try {
     else {
         Write-Output "Service does not exist." >> c:\users\ali\desktop\log.txt
         Write-Output 'Creating Rclone service...' >> c:\users\ali\desktop\log.txt
-        New-Service -Name $($service_name) -StartupType Manual -BinaryPathName "$($rclone_path) mount $($rclone_endpoint): * --config $($rclone_config_file) --log-file $($rclone_log_file)"
+        New-Service -Name $($service_name) -StartupType Manual -BinaryPathName "$($rclone_path) mount $($rclone_endpoint):* --config $($rclone_config_file) --log-file $($rclone_log_file)"
         Write-Output 'Rclone service created.' >> c:\users\ali\desktop\log.txt
     }
 }

@@ -115,15 +115,14 @@ function submitForm() {
   const endpoint = endpoint_input.value;
   let service_name = service_name_input.value;
 
+  username_input.value = "";
+  password_input.value = "";
+  endpoint_input.value = "";
+  service_name_input.value = "";
+
   if (!service_name) {
     service_name = "Rclone" + crypto.randomUUID();
   }
-
-  console.log("uesrname:", username);
-  console.log("password:", password);
-  console.log("endpoint:", endpoint);
-  console.log("service_name:", service_name);
-  console.log("rclone_path:", rclone_path);
 
   IPCRenderer.send("rclone:start", {
     rclone_path,

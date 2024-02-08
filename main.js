@@ -17,7 +17,7 @@ let main_window;
 const user_home_dir = os.homedir();
 const application_dir = user_home_dir + "\\rclone_service_manager";
 const application_conf_file =
-  application_dir + "\\thisapplicationconfigfile.conf";
+  application_dir + "\\thisapplicationconfigfile.json";
 const rclone_logs_dir = application_dir + "\\rclone_logs";
 let rclone_path;
 let conf_data;
@@ -52,9 +52,11 @@ function startup() {
 
 function remove_rclone(service_name) {
   if (service_name in rclone_services) {
+    const config_file = rclone_services[service_name].config_file;
     delete rclone_services[service_name];
-    fs.existsSync(application_dir + `\\${service_name}.conf`) &&
-      fs.rmSync(application_dir + `\\${service_name}.conf`);
+    if (fs.existsSync(config_file)) {
+      fs.rmSync(config_file);
+    }
   }
 }
 
@@ -62,7 +64,6 @@ function update_application_conf(new_conf = {}) {
   for (const conf in new_conf) {
     conf_data[conf] = new_conf[conf];
   }
-  console.log(conf_data);
   writeJsonSync(application_conf_file, conf_data);
 }
 
