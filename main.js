@@ -24,6 +24,14 @@ let conf_data;
 let rclone_services = {};
 const rclone_services_file = application_dir + "\\servicesconf.json";
 
+function sync_services() {
+  Object.keys(rclone_services).forEach((service_name) => {
+    check_rclone(service_name);
+  });
+
+  save_rclone_services();
+}
+
 function startup() {
   fs.existsSync(application_dir) ||
     fs.mkdirSync(application_dir, { recursive: true });
@@ -48,6 +56,8 @@ function startup() {
     rclone_services = {};
     writeJsonSync(rclone_services_file, rclone_services);
   }
+
+  setInterval(sync_services, 5_000);
 }
 
 function remove_rclone(service_name) {
@@ -126,7 +136,7 @@ app.whenReady().then(async () => {
 
   Object.keys(rclone_services).forEach((service_name) => {
     main_window.webContents.send("rclone:created", {
-      service_name: service_name,
+      service_name,
     });
     check_rclone(service_name);
   });
