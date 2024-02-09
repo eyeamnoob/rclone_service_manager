@@ -1,4 +1,4 @@
-const { contextBridge, ipcRenderer } = require("electron");
+const { contextBridge, ipcRenderer, app } = require("electron");
 const Toastify = require("toastify-js");
 
 contextBridge.exposeInMainWorld("IPCRenderer", {

@@ -46,6 +46,8 @@ function startup() {
     conf_data = readJsonSync(application_conf_file);
     rclone_path = conf_data.rclone_path;
   } else {
+    main_window.webContents.send("startup:first", {});
+    return false;
     conf_data = {};
     writeJsonSync(application_conf_file, conf_data);
   }
@@ -58,6 +60,8 @@ function startup() {
   }
 
   setInterval(sync_services, 5_000);
+
+  return true;
 }
 
 function remove_rclone(service_name) {
@@ -108,7 +112,7 @@ function check_rclone(service_name) {
 
 async function create_main_window() {
   main_window = new BrowserWindow({
-    title: "manage rclone services",
+    title: "Burna",
     width: 1000,
     height: 640,
     webPreferences: {
@@ -130,21 +134,21 @@ async function create_main_window() {
 app.whenReady().then(async () => {
   await create_main_window();
 
-  startup();
+  if (startup()) {
+    if (rclone_path) {
+      main_window.webContents.send("rclone:path", { rclone_path });
+    }
 
-  if (rclone_path) {
-    main_window.webContents.send("rclone:path", { rclone_path });
-  }
-
-  Object.keys(rclone_services).forEach((service_name) => {
-    main_window.webContents.send("rclone:created", {
-      service_name,
-      endpoint: rclone_services[service_name].endpoint,
+    Object.keys(rclone_services).forEach((service_name) => {
+      main_window.webContents.send("rclone:created", {
+        service_name,
+        endpoint: rclone_services[service_name].endpoint,
+      });
+      check_rclone(service_name);
     });
-    check_rclone(service_name);
-  });
 
-  save_rclone_services();
+    save_rclone_services();
+  }
 
   app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) {
@@ -483,6 +487,62 @@ ipcMain.on("rclone:remove", (e, data) => {
       });
       remove_rclone(service_name);
       save_rclone_services();
+    }
+  });
+});
+
+ipcMain.on("install:yes", (e, data) => {
+  const script_path = path.join(
+    RESOURCES_PATH,
+    "scripts",
+    "install_dependencies.ps1"
+  );
+  const command = `$ErrorActionPreference = 'stop'
+
+  try {
+      $process = Start-Process powershell -Verb RunAs -Wait -PassThru -WindowStyle Hidden -ArgumentList "-ExecutionPolicy Bypass -File ${script_path}"
+      $exitCode = $process.ExitCode
+      exit $exitCode
+  }
+  catch {
+      exit 100
+  }`;
+
+  exec(command, { shell: "powershell.exe" }, (error, stdout, stderr) => {
+    if (error) {
+      console.log("install fail");
+      main_window.webContents.send("install:fail", {});
+    } else {
+      main_window.webContents.send("install:success", {});
+      conf_data = {};
+      writeJsonSync(application_conf_file, conf_data);
+    }
+  });
+});
+
+ipcMain.on("install:no", (e, data) => {
+  conf_data = {};
+  writeJsonSync(application_conf_file, conf_data);
+
+  if (startup()) {
+    if (rclone_path) {
+      main_window.webContents.send("rclone:path", { rclone_path });
+    }
+
+    Object.keys(rclone_services).forEach((service_name) => {
+      main_window.webContents.send("rclone:created", {
+        service_name,
+        endpoint: rclone_services[service_name].endpoint,
+      });
+      check_rclone(service_name);
+    });
+
+    save_rclone_services();
+  }
+
+  app.on("activate", () => {
+    if (BrowserWindow.getAllWindows().length === 0) {
+      create_main_window();
     }
   });
 });

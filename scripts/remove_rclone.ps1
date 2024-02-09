@@ -5,6 +5,7 @@ try {
     $service = Get-Service -Name $($service_name) -ErrorAction SilentlyContinue
 
     if ($null -ne $service) {
+        Stop-Service -Name $($service_name)
         sc.exe delete $($service_name) 
         
         return 0

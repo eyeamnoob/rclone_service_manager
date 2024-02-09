@@ -11,6 +11,8 @@ const password_input = document.getElementById("password");
 const endpoint_input = document.getElementById("endpoint");
 const extra_args_input = document.getElementById("extraargs");
 const rclone_path_txt = document.getElementById("rclone-path");
+const loading = document.getElementById("loading");
+
 let rclone_path = "";
 
 let services = {};
@@ -224,7 +226,6 @@ IPCRenderer.on("rclone:toggled", (e, data) => {
 });
 
 IPCRenderer.on("rclone:created", (event, data) => {
-  console.log(data.endpoint);
   new_service_row(data.service_name, data.endpoint, false);
 });
 
@@ -272,4 +273,26 @@ IPCRenderer.on("rclone:path", (event, data) => {
   } else {
     console.log("rclone path provided but it's empty");
   }
+});
+
+IPCRenderer.on("startup:first", (event, data) => {
+  const answer = confirm("Do you want to install rclone and its dependencies?");
+
+  if (answer) {
+    IPCRenderer.send("install:yes", {});
+    loading.innerText = "Installing dependencies... Don't quit the app.";
+  } else {
+    IPCRenderer.send("install:no", {});
+  }
+});
+
+IPCRenderer.on("install:fail", (event, data) => {
+  alert("Install dependencies failed. You can close app and open it again.");
+});
+
+IPCRenderer.on("install:success", (event, data) => {
+  console.log("success");
+  alert(
+    "Install dependencies was successful. You can close app and open it again."
+  );
 });

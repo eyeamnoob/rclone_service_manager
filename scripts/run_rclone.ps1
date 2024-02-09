@@ -5,15 +5,13 @@ try {
     $rclone_config_file = $args[2]
     $rclone_endpoint = $args[3]
     $service_name = $args[4]
-    $extra_args = $args[5..($args.Length - 1)]
 
-    
-    
-    
-    
-    
-    
-    
+    if ($args.Length -gt 5) {
+        $extra_args = $args[5..($args.Length - 1)]
+    }
+    else {
+        $extra_args = "";
+    }    
 
     $service = Get-Service -Name $($service_name) -ErrorAction SilentlyContinue
     
@@ -25,7 +23,7 @@ try {
     else {
         
         
-        New-Service -Name $($service_name) -StartupType Manual -BinaryPathName "$($rclone_path) mount $($rclone_endpoint):* --config $($rclone_config_file) --log-file $($rclone_log_file) $($extra_args)"
+        New-Service -Name $($service_name) -StartupType Manual -BinaryPathName "$($rclone_path) mount $($rclone_endpoint): * --config $($rclone_config_file) --log-file $($rclone_log_file) $($extra_args)"
         
     }
 }
