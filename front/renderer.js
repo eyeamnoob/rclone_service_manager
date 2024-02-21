@@ -8,7 +8,7 @@ const file_input = document.getElementById("file-input");
 const service_name_input = document.getElementById("service-name");
 const username_input = document.getElementById("username");
 const password_input = document.getElementById("password");
-const endpoint_input = document.getElementById("endpoint");
+const bucket_input = document.getElementById("bucket");
 const extra_args_input = document.getElementById("extraargs");
 const rclone_path_txt = document.getElementById("rclone-path");
 const loading = document.getElementById("loading");
@@ -19,7 +19,7 @@ let services = {};
 
 let update = false;
 
-function new_service_row(name, endpoint, status) {
+function new_service_row(name, bucket, status) {
   const new_row = document.createElement("tr");
 
   const name_cell = document.createElement("td");
@@ -28,11 +28,11 @@ function new_service_row(name, endpoint, status) {
 
   name_cell.appendChild(name_text);
 
-  const endpoint_cell = document.createElement("td");
+  const bucket_cell = document.createElement("td");
 
-  endpoint_text = document.createTextNode(` ${endpoint}`);
+  const bucket_text = document.createTextNode(bucket ? ` ${bucket}` : " -");
 
-  endpoint_cell.appendChild(endpoint_text);
+  bucket_cell.appendChild(bucket_text);
 
   const status_cell = document.createElement("td");
 
@@ -67,7 +67,7 @@ function new_service_row(name, endpoint, status) {
   status_cell.appendChild(update_rclone_button);
 
   new_row.appendChild(name_cell);
-  new_row.appendChild(endpoint_cell);
+  new_row.appendChild(bucket_cell);
   new_row.appendChild(status_cell);
 
   new_row.id = name;
@@ -75,7 +75,7 @@ function new_service_row(name, endpoint, status) {
 
   services[name] = {
     status,
-    endpoint,
+    bucket: bucket,
   };
 }
 
@@ -128,18 +128,18 @@ function openForm(service_name = "") {
   popup.style.display = "block";
 
   if (service_name !== "") {
-    const endpoint = services[service_name].endpoint;
+    const bucket = services[service_name].bucket;
     service_name_input.value = service_name;
-    endpoint_input.value = endpoint;
+    bucket_input.value = bucket;
 
     service_name_input.disabled = true;
-    endpoint_input.disabled = true;
+    bucket_input.disabled = true;
     extra_args_input.disabled = true;
 
     update = true;
   } else {
     service_name_input.disabled = false;
-    endpoint_input.disabled = false;
+    bucket_input.disabled = false;
     extra_args_input.disabled = false;
 
     update = false;
@@ -160,15 +160,15 @@ function submitForm() {
     return;
   }
 
-  const username = username_input.value;
-  const password = password_input.value;
-  const endpoint = endpoint_input.value;
-  let service_name = service_name_input.value;
-  const extra_args = extra_args_input.value;
+  const username = username_input.value.trim();
+  const password = password_input.value.trim();
+  const bucket = bucket_input.value.trim();
+  let service_name = service_name_input.value.trim();
+  const extra_args = extra_args_input.value.trim();
 
   username_input.value = "";
   password_input.value = "";
-  endpoint_input.value = "";
+  bucket_input.value = "";
   service_name_input.value = "";
   extra_args_input.value = "";
 
@@ -180,7 +180,7 @@ function submitForm() {
     rclone_path,
     username,
     password,
-    endpoint,
+    bucket: bucket ? bucket : undefined,
     service_name,
     extra_args,
     update,
@@ -226,7 +226,7 @@ IPCRenderer.on("rclone:toggled", (e, data) => {
 });
 
 IPCRenderer.on("rclone:created", (event, data) => {
-  new_service_row(data.service_name, data.endpoint, false);
+  new_service_row(data.service_name, data.bucket, false);
 });
 
 IPCRenderer.on("rclone:removed", (event, data) => {
