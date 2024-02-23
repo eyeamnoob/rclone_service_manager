@@ -9,7 +9,7 @@ if (require("electron-squirrel-startup")) {
   app.quit();
 }
 
-process.env.NODE_ENV = "development";
+process.env.NODE_ENV = "production";
 
 const is_dev = process.env.NODE_ENV !== "production";
 
