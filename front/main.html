@@ -21,6 +21,7 @@
       />
       <input type="text" id="username" placeholder="username" />
       <input type="password" id="password" placeholder="password" />
+      <input type="text" id="endpoint" placeholder="endpoint" />
       <input type="text" id="bucket" placeholder="bucket" />
       <input
         type="text"
@@ -58,22 +59,13 @@
         </header>
 
         <div class="content">
-          <form id="create-service-form" class="hidden">
-            <label for="name">Name</label>
-            <input type="text" id="name" name="name" />
-            <label for="endpoint">Endpoint</label>
-            <input type="text" id="endpoint" name="endpoint" />
-            <label for="status">Run now</label>
-            <input type="checkbox" id="status" name="status" />
-            <button id="submit-btn" type="submit">Submit</button>
-          </form>
           <p id="rclone-path" style="display: none">Using Rclone:</p>
           <button onclick="reset_rclone_path()">Reset Rclone path</button>
           <table id="services-table">
             <thead>
               <tr>
                 <th>Service Name</th>
-                <th>Endpoint</th>
+                <th>bucket Name</th>
                 <th>Status</th>
               </tr>
             </thead>

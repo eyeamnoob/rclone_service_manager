@@ -9,6 +9,7 @@ const service_name_input = document.getElementById("service-name");
 const username_input = document.getElementById("username");
 const password_input = document.getElementById("password");
 const bucket_input = document.getElementById("bucket");
+const endpoint_input = document.getElementById("endpoint");
 const extra_args_input = document.getElementById("extraargs");
 const rclone_path_txt = document.getElementById("rclone-path");
 const loading = document.getElementById("loading");
@@ -163,12 +164,14 @@ function submitForm() {
   const username = username_input.value.trim();
   const password = password_input.value.trim();
   const bucket = bucket_input.value.trim();
+  const endpoint = endpoint_input.value.trim();
   let service_name = service_name_input.value.trim();
   const extra_args = extra_args_input.value.trim();
 
   username_input.value = "";
   password_input.value = "";
   bucket_input.value = "";
+  endpoint_input.value = "";
   service_name_input.value = "";
   extra_args_input.value = "";
 
@@ -181,6 +184,7 @@ function submitForm() {
     username,
     password,
     bucket: bucket ? bucket : undefined,
+    endpoint,
     service_name,
     extra_args,
     update,

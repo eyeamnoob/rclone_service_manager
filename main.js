@@ -164,14 +164,15 @@ function create_config_file(data) {
     "user = {username}\n" +
     "key = {password}\n" +
     "region = us-east-1\n" +
-    "auth = https://api.zdrive.ir/auth/v1.0";
+    "auth = {endpoint}";
 
-  const username = data.username;
-  const password = data.password;
+  const username = data.username.trim();
+  const password = data.password.trim();
   const update = data.update;
-  const bucket = data.bucket ? data.bucket : "__undefined__";
+  const bucket = data.bucket ? data.bucket.trim() : "__undefined__";
+  const endpoint = data.endpoint.trim();
 
-  if (!username || !password) {
+  if (!username || !password || !endpoint) {
     return -1;
   }
 
@@ -179,7 +180,8 @@ function create_config_file(data) {
     username.includes(" ") ||
     password.includes(" ") ||
     data.service_name.includes(" ") ||
-    bucket.includes(" ")
+    bucket.includes(" ") ||
+    endpoint.includes(" ")
   ) {
     return -2;
   }
@@ -195,6 +197,7 @@ function create_config_file(data) {
   const ready_to_write = config_file_template
     .replace("{username}", username)
     .replace("{password}", password)
+    .replace("{endpoint}", endpoint)
     .replace("{last_mod_date}", new Date());
 
   fs.writeFileSync(config_file, ready_to_write);
