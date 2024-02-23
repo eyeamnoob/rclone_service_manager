@@ -5,12 +5,16 @@ const fs = require("node:fs");
 const os = require("node:os");
 const { readJsonSync, writeJsonSync } = require("fs-extra");
 
+if (require("electron-squirrel-startup")) {
+  app.quit();
+}
+
 process.env.NODE_ENV = "development";
 
 const is_dev = process.env.NODE_ENV !== "production";
 
 const RESOURCES_PATH = is_dev ? __dirname : process.resourcesPath;
-
+const DEPENDENCIES_PATH = path.join(RESOURCES_PATH, "dependencies");
 let main_window;
 
 // globals
@@ -515,7 +519,7 @@ ipcMain.on("install:yes", (e, data) => {
   const command = `$ErrorActionPreference = 'stop'
 
   try {
-      $process = Start-Process powershell -Verb RunAs -Wait -PassThru -WindowStyle Hidden -ArgumentList "-ExecutionPolicy Bypass -File ${script_path}"
+      $process = Start-Process powershell -Verb RunAs -Wait -PassThru -WindowStyle Hidden -ArgumentList "-ExecutionPolicy Bypass -File \`"${script_path}\`" \`"${DEPENDENCIES_PATH}\`""
       $exitCode = $process.ExitCode
       exit $exitCode
   }
@@ -529,7 +533,8 @@ ipcMain.on("install:yes", (e, data) => {
       main_window.webContents.send("install:fail", {});
     } else {
       main_window.webContents.send("install:success", {});
-      conf_data = {};
+      rclone_path = path.join(DEPENDENCIES_PATH, "rclone", "rclone.exe");
+      conf_data = { rclone_path };
       writeJsonSync(application_conf_file, conf_data);
     }
   });

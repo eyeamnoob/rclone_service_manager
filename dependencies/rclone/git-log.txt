@@ -1,0 +1,240 @@
+commit bd1fbcae12f795f498c7ace6af9d9cc218102094
+Author: Nick Craig-Wood <nick@craig-wood.com>
+Date:   Mon Jul 17 14:28:15 2023 +0100
+
+    Version v1.63.1
+
+commit 7aa097c8ada61ee810ae73f04631538d3179b171
+Author: Nick Craig-Wood <nick@craig-wood.com>
+Date:   Mon Jul 17 14:19:16 2023 +0100
+
+    build: add new sponsors page to docs
+
+commit 10171be3956c1c1791fe5b445af8798dca279bf8
+Author: Nick Craig-Wood <nick@craig-wood.com>
+Date:   Mon Jul 17 14:16:54 2023 +0100
+
+    Start v1.63.1-DEV development
+
+commit 80ff676f781b4ea91c8fdb0544c638f1605efb11
+Author: Vladislav Vorobev <x.miere@gmail.com>
+Date:   Thu Jun 29 20:13:25 2023 +0300
+
+    docs: no need to disable 2FA for Mail.ru Cloud anymore
+    
+    This sentence was written at the time when backend used access token, nowadays, users need to generate and use application password instead, see #6398.
+
+commit 9410ccb27a6b5bc1cc320b964b867f37a7f5b4aa
+Author: albertony <12441419+albertony@users.noreply.github.com>
+Date:   Tue Jul 4 17:17:22 2023 +0200
+
+    box: fix reconnect failing with HTTP 400 Bad Request
+    
+    The error is:
+    
+      Error: failed to configure token with jwt authentication: jwtutil: failed making auth request: 400 Bad Request
+    
+    With the following additional debug information:
+    
+      jwtutil: Response Body: {"error":"invalid_grant","error_description":"Please check the 'aud' claim. Should be a string"}
+    
+    Problem is that in jwt-go the RegisteredClaims type has Audience field (aud claim) that
+    is a list, while box apparantly expects it to be a singular string. In jwt-go v4 we
+    currently use there is an alternative type StandardClaims which matches what box wants.
+    Unfortunately StandardClaims is marked as deprecated, and is removed in the
+    newer v5 version, so we this is a short term fix only.
+    
+    Fixes #7114
+
+commit 3cd07af85b2a406a45a86ea43a3956ddc4d3ec6f
+Author: darix <darix@users.noreply.github.com>
+Date:   Mon Jul 10 15:37:09 2023 +0200
+
+    webdav: nextcloud chunking: add more guidance for the user to check the config
+
+commit cec75c873fb02a2754c3a6f55891562c43cad3c4
+Author: Nick Craig-Wood <nick@craig-wood.com>
+Date:   Sat Jul 1 17:18:21 2023 +0100
+
+    operations: fix .rclonelink files not being converted back to symlinks
+    
+    Before this change the new partial downloads code was causing symlinks
+    to be copied as regular files.
+    
+    This was because the partial isn't named .rclonelink so the local
+    backend saves it as a normal file and renaming it to .rclonelink
+    doesn't cause it to become a symlink.
+    
+    This fixes the problem by not copying .rclonelink files using the
+    partials mechanism but reverting to the previous --inplace behaviour.
+    
+    This could potentially be fixed better in the future by changing the
+    local backend Move to change files to and from symlinks depending on
+    their name. However this was deemed too complicated for a point
+    release.
+    
+    This also adds a test in the local backend. This test should ideally
+    be in operations but it isn't easy to put it there as operations knows
+    nothing of symlinks.
+    
+    Fixes #7101
+    See: https://forum.rclone.org/t/reggression-in-v1-63-0-links-drops-the-rclonelink-extension/39483
+
+commit 07d85297c0f6eef42ba7bf1a5ab2a767b8c2cee0
+Author: Nick Craig-Wood <nick@craig-wood.com>
+Date:   Fri Jul 7 16:06:31 2023 +0100
+
+    local: fix partial directory read for corrupted filesystem
+    
+    Before this change if a directory entry could be listed but not
+    lstat-ed then rclone would give an error and abort the directory
+    listing with the error
+    
+        failed to read directory entry: failed to read directory "XXX": lstat XXX
+    
+    This change makes sure that the directory listing carries on even
+    after this kind of error.
+    
+    The sync will be failed but it will carry on.
+    
+    This problem was caused by a programming error setting the err
+    variable in an outer scope when it should have been using a local err
+    variable.
+    
+    See: https://forum.rclone.org/t/sync-aborts-if-even-one-single-unreadable-folder-is-encountered/39653
+
+commit 9aa714e659e55eb92ffa23929c965ae1338d85e5
+Author: Nick Craig-Wood <nick@craig-wood.com>
+Date:   Wed Jul 5 12:33:38 2023 +0100
+
+    smb: fix "Statfs failed: bucket or container name is needed" when mounting
+    
+    Before this change, if you mounted the root of the smb then it would
+    give an error on rclone about and periodically in the mount logs:
+    
+        Statfs failed: bucket or container name is needed in remote
+    
+    This fix makes the smb backend return empty usage in this case which
+    will stop the errors and show the default 1P of free space.
+    
+    See: https://forum.rclone.org/t/error-statfs-failed-bucket-or-container-name-is-needed-in-remote/39631
+
+commit 320c95048d1a9db35fca92a377e5cf7da56f67e1
+Author: Mahad <56235065+Mahad-lab@users.noreply.github.com>
+Date:   Fri Jul 7 01:24:17 2023 +0500
+
+    docs: drive: Fix step 4 in "Making your own client_id"
+
+commit 19dba3bf281f688d162294904b53a582ce4420a0
+Author: Nick Craig-Wood <nick@craig-wood.com>
+Date:   Thu Jul 6 16:11:53 2023 +0100
+
+    docs: update the number of providers supported
+
+commit 842df59419cb41ccd6e7650b780ec87ac6722036
+Author: Nick Craig-Wood <nick@craig-wood.com>
+Date:   Thu Jul 6 10:13:42 2023 +0100
+
+    docs: remove old donate page
+
+commit 73d1b72bd759f838ad322b42e75111652eafe02e
+Author: Paul <devnoname120@gmail.com>
+Date:   Sun Jul 2 16:50:52 2023 +0200
+
+    webdav: nextcloud: fix must use /dav/files/USER endpoint not /webdav error
+    
+    Fix https://github.com/rclone/rclone/issues/7103
+    
+    Before this change the RegExp validating the endpoint URL was a bit
+    too strict allowing only /dav/files/USER due to chunking limitations.
+    
+    This patch adds back support for /dav/files/USER/dir/subdir etc.
+    
+    Co-authored-by: Nick Craig-Wood <nick@craig-wood.com>
+
+commit a3cfe5f7fef69ac858b4075775dce1fe3876d9cb
+Author: Nick Craig-Wood <nick@craig-wood.com>
+Date:   Wed Jul 5 12:19:04 2023 +0100
+
+    docs: update contact page on website
+
+commit 9d3b8d9a9f1c69b9ae1947708aa907250c7ac507
+Author: Nick Craig-Wood <nick@craig-wood.com>
+Date:   Sat Jul 1 15:28:10 2023 +0100
+
+    operations: fix deadlock when using lsd/ls with --progress - Fixes #7102
+    
+    The --progress flag overrides operations.SyncPrintf in order to do its
+    magic on stdout without interfering with other output.
+    
+    Before this change the syncFprintf routine in operations (which is
+    used to print all output to stdout) was taking the
+    operations.StdoutMutex and the printProgress function in the
+    --progress routine was also attempting to take the same mutex causing
+    a deadlock.
+    
+    This patch fixes the problem by moving the locking from the
+    syncFprintf function to SyncPrintf. It is then up to the function
+    overriding this to lock the StdoutMutex. This ensures the StdoutMutex
+    can never cause a deadlock.
+
+commit 73e66a379840e5c0c192e421878a06ddbd41ce33
+Author: Nick Craig-Wood <nick@craig-wood.com>
+Date:   Thu Jun 29 17:38:18 2023 +0100
+
+    dirtree: fix performance with large directories of directories and --fast-list
+    
+    Before this change if using --fast-list on a directory with more than
+    a few thousand directories in it DirTree.CheckParents became very slow
+    taking up to 24 hours for a directory with 1,000,000 directories in
+    it.
+    
+    This is because it becomes an O(N²) operation as DirTree.Find has to
+    search each directory in a linear fashion as it is stored as a slice.
+    
+    This patch fixes the problem by scanning the DirTree for directories
+    before starting the CheckParents process so it never has to call
+    DirTree.Find.
+    
+    After the fix calling DirTree.CheckParents on a directory with
+    1,000,000 directories in it will take about 1 second.
+    
+    Anything which calls DirTree.Find can potentially have bad performance
+    so in the future we should redesign the DirTree to use a different
+    underlying datastructure or have an index.
+    
+    https://forum.rclone.org/t/almost-24-hours-cpu-compute-time-during-sync-between-two-large-s3-buckets/39375/
+
+commit f150e27abe1efebacf499fa8452d33cf2e77487f
+Author: Anagh Kumar Baranwal <6824881+darthShadow@users.noreply.github.com>
+Date:   Fri Jun 30 20:59:57 2023 +0530
+
+    build: fix macos builds for versions < 12
+    
+    Signed-off-by: Anagh Kumar Baranwal <6824881+darthShadow@users.noreply.github.com>
+
+commit a72e082e6b4ab8554f799cfcdc744463d3d6b023
+Author: Dean Attali <daattali@gmail.com>
+Date:   Sat Jul 1 11:48:08 2023 -0400
+
+    docs: dropbox get client id, clarify you need to click a button
+
+commit fcfbd3153bec769eb859d77d4086915f5e94fd10
+Author: Nick Craig-Wood <nick@craig-wood.com>
+Date:   Wed Jun 28 21:10:24 2023 +0100
+
+    docs: website: replace google analytics with plausible analytics
+
+commit 9a8075b682c26577af1f1989397b42a27a7c3818
+Author: Nick Craig-Wood <nick@craig-wood.com>
+Date:   Wed Jun 21 12:46:07 2023 +0100
+
+    docs: rename donate page to sponsor page and rework
+
+commit 996037bee931b24f528ea102374e26da72ed15b4
+Author: Sawada Tsunayoshi <34431649+TsunayoshiSawada@users.noreply.github.com>
+Date:   Fri Jun 30 18:58:38 2023 +0530
+
+    docs: fixed typo in exclude example in filtering docs (#7097)
+    
+    The exclude flag instructions had "without" written as "with" which changes the whole meaning of how the exclude flag works.

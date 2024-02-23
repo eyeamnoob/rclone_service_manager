@@ -20,10 +20,10 @@ try {
     }
     else {
         if ($rclone_bucket -eq '__undefined__') {
-            New-Service -Name $($service_name) -StartupType Manual -BinaryPathName "$($rclone_path) mount monster: * --config $($rclone_config_file) --log-file $($rclone_log_file) $($extra_args)"
+            New-Service -Name $($service_name) -StartupType Manual -BinaryPathName "`"$($rclone_path)`" mount monster: * --config $($rclone_config_file) --log-file $($rclone_log_file) $($extra_args)"
         }
         else {
-            New-Service -Name $($service_name) -StartupType Manual -BinaryPathName "$($rclone_path) mount monster:$($rclone_bucket) * --config $($rclone_config_file) --log-file $($rclone_log_file) $($extra_args)"
+            New-Service -Name $($service_name) -StartupType Manual -BinaryPathName "`"$($rclone_path)`" mount monster:$($rclone_bucket) * --config $($rclone_config_file) --log-file $($rclone_log_file) $($extra_args)"
         }
     }
 }
