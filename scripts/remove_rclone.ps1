@@ -11,13 +11,9 @@ try {
         exit 0
     }
     else {
-        
-
-        exit -1
+        exit 1
     }
 }
 catch {
-    
-    
-    exit 1
+    exit 2
 }

@@ -23,7 +23,7 @@ try {
         else {
             
 
-            exit 2
+            exit 3
         }
 
         exit 0
@@ -31,12 +31,12 @@ try {
     else {
         
 
-        exit 1
+        exit 2
     }
 }
 catch {
     
     
 
-    exit -1
+    exit 1
 }

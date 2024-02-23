@@ -439,11 +439,11 @@ ipcMain.on("rclone:toggle", (e, data) => {
         main_window.webContents.send("info", {
           message: "service toggled",
         });
-      } else if (error.code === -1) {
+      } else if (error.code === 1) {
         main_window.webContents.send("error", {
           message: "can not toggle service",
         });
-      } else if (error.code === 1) {
+      } else if (error.code === 2) {
         main_window.webContents.send("error", {
           message: "service does not exist",
         });
@@ -455,7 +455,7 @@ ipcMain.on("rclone:toggle", (e, data) => {
         });
         remove_rclone(service_name);
         save_rclone_services();
-      } else if (error.code === 2) {
+      } else if (error.code === 3) {
         main_window.webContents.send("error", {
           message: "unknown status",
         });
@@ -498,7 +498,7 @@ ipcMain.on("rclone:remove", (e, data) => {
         });
         remove_rclone(service_name);
         save_rclone_services();
-      } else if (error.code === -1) {
+      } else if (error.code === 1) {
         main_window.webContents.send("error", {
           message: "service does not exist",
         });
@@ -507,7 +507,7 @@ ipcMain.on("rclone:remove", (e, data) => {
         });
         remove_rclone(service_name);
         save_rclone_services();
-      } else if (error.code === 1) {
+      } else if (error.code === 2) {
         main_window.webContents.send("error", {
           message: "can not delete service",
         });
