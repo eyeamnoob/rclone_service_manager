@@ -145,6 +145,10 @@ app.whenReady().then(async () => {
       main_window.webContents.send("rclone:created", {
         service_name,
         bucket: rclone_services[service_name].bucket,
+        extra_args: rclone_services[service_name].extra_args,
+        username: rclone_services[service_name].username,
+        password: rclone_services[service_name].password,
+        endpoint: rclone_services[service_name].endpoint,
       });
       check_rclone(service_name);
     });
@@ -194,10 +198,6 @@ function create_config_file(data) {
 
   const config_file = application_dir + `\\${data.service_name}.conf`;
 
-  if (fs.existsSync(config_file) && !update) {
-    return 1; // config file exists. so we need to use it or overwrite it.
-  }
-
   const ready_to_write = config_file_template
     .replace("{username}", username)
     .replace("{password}", password)
@@ -220,13 +220,7 @@ ipcMain.on("rclone:start", (e, data) => {
   }_log_${new Date().toISOString().replaceAll(":", "-")}.txt`;
   const rclone_config_file = create_config_file(data);
 
-  if (rclone_config_file == 1) {
-    console.log("config file already exists");
-    main_window.webContents.send("error", {
-      message: "config file already exists",
-    });
-    return;
-  } else if (rclone_config_file == -1) {
+  if (rclone_config_file == -1) {
     console.log("provide all required informations");
     main_window.webContents.send("error", {
       message: "provide all required informations",
@@ -262,13 +256,18 @@ ipcMain.on("rclone:start", (e, data) => {
         main_window.webContents.send("error", {
           message: "First, please turn off service.",
         });
+        return;
       } else {
         rclone_services[service_name] = {
           config_file: rclone_config_file,
           log_file: rclone_log_file,
           rclone_path: rclone_path,
-          bucket: data.bucket,
+          bucket: bucket,
           status: false,
+          extra_args: extra_args,
+          username: data.username,
+          password: data.password,
+          endpoint: data.endpoint,
         };
         save_rclone_services();
 
@@ -286,9 +285,8 @@ ipcMain.on("rclone:start", (e, data) => {
       main_window.webContents.send("rclone:removed", {
         service_name,
       });
+      return;
     }
-
-    return;
   }
 
   const args = [
@@ -297,6 +295,7 @@ ipcMain.on("rclone:start", (e, data) => {
     rclone_config_file,
     bucket ? bucket : undefined,
     service_name,
+    update ? "update" : "create",
     extra_args,
   ];
   const escapedArgs = args.map((arg) =>
@@ -305,35 +304,36 @@ ipcMain.on("rclone:start", (e, data) => {
 
   const command = `$ErrorActionPreference = 'stop'
   try {
-      $output = Start-Process powershell -Verb RunAs -Wait -PassThru -WindowStyle Hidden -ArgumentList "-ExecutionPolicy Bypass -File \`"${script_path}\`" ${escapedArgs.join(
+	  $output = Start-Process powershell -Verb RunAs -Wait -PassThru -WindowStyle Hidden -ArgumentList "-ExecutionPolicy Bypass -File \`"${script_path}\`" ${escapedArgs.join(
     " "
   )}"
-      exit $output.ExitCode
+	  exit $output.ExitCode
   }
   catch {
-    exit 100
+	exit 100
   }`;
   exec(command, { shell: "powershell.exe" }, (error, stdout, stderr) => {
     if (error) {
-      if (error.code === -1) {
+      if (error.code === 1) {
         console.log(`Error on executing script: ${script_path}`);
         main_window.webContents.send("error", {
           message: `can not create service ${service_name}`,
         });
-        fs.rmSync(rclone_config_file);
-      } else if (error.code === -2) {
+      } else if (error.code === 2) {
         console.log(`Error on executing script: ${script_path}`);
         main_window.webContents.send("error", {
           message: `service with name ${service_name} already exists`,
         });
-        fs.rmSync(rclone_config_file);
-      } else if (error.code === 1) {
+      } else if (error.code === 3) {
         console.log(`Error on executing script: ${script_path}`);
         main_window.webContents.send("rclone:created", {
           service_name,
-          bucket: data.bucket,
+          bucket: bucket,
+          extra_args: extra_args,
+          username: data.username,
+          password: data.password,
+          endpoint: data.endpoint,
         });
-        fs.rmSync(rclone_config_file);
         main_window.webContents.send("error", {
           message: `can not start service ${service_name}`,
         });
@@ -341,14 +341,22 @@ ipcMain.on("rclone:start", (e, data) => {
           config_file: rclone_config_file,
           log_file: rclone_log_file,
           rclone_path: rclone_path,
-          bucket: data.bucket,
+          bucket: bucket,
           status: false,
+          extra_args: extra_args,
+          username: data.username,
+          password: data.password,
+          endpoint: data.endpoint,
         };
         save_rclone_services();
       } else if (error.code === 0) {
         main_window.webContents.send("rclone:created", {
           service_name,
-          bucket: data.bucket,
+          bucket: bucket,
+          extra_args: extra_args,
+          username: data.username,
+          password: data.password,
+          endpoint: data.endpoint,
         });
         main_window.webContents.send("info", {
           message: `service ${service_name} started`,
@@ -361,21 +369,28 @@ ipcMain.on("rclone:start", (e, data) => {
           config_file: rclone_config_file,
           log_file: rclone_log_file,
           rclone_path: rclone_path,
-          bucket: data.bucket,
+          bucket: bucket,
           status: true,
+          extra_args: extra_args,
+          username: data.username,
+          password: data.password,
+          endpoint: data.endpoint,
         };
         save_rclone_services();
-      } else {
+      } else if (error.code !== 4) {
         console.log(`unknown error on script: ${script_path}`);
         main_window.webContents.send("error", {
           message: "unknown error",
         });
-        fs.rmSync(rclone_config_file);
       }
     } else {
       main_window.webContents.send("rclone:created", {
         service_name,
-        bucket: data.bucket,
+        bucket: bucket,
+        extra_args: extra_args,
+        username: data.username,
+        password: data.password,
+        endpoint: data.endpoint,
       });
       main_window.webContents.send("info", {
         message: `service ${service_name} started`,
@@ -388,8 +403,12 @@ ipcMain.on("rclone:start", (e, data) => {
         config_file: rclone_config_file,
         log_file: rclone_log_file,
         rclone_path: rclone_path,
-        bucket: data.bucket,
+        bucket: bucket,
         status: true,
+        extra_args: extra_args,
+        username: data.username,
+        password: data.password,
+        endpoint: data.endpoint,
       };
       save_rclone_services();
     }
@@ -403,11 +422,11 @@ ipcMain.on("rclone:toggle", (e, data) => {
   const script_path = path.join(RESOURCES_PATH, "scripts", "toggle_rclone.ps1");
   const command = `$ErrorActionPreference = 'stop'
   try {
-      $output = Start-Process powershell -Verb RunAs -Wait -PassThru -WindowStyle Hidden -ArgumentList "-ExecutionPolicy Bypass -File ${script_path} ${service_name} ${status}"
-      exit $output.ExitCode
+	  $output = Start-Process powershell -Verb RunAs -Wait -PassThru -WindowStyle Hidden -ArgumentList "-ExecutionPolicy Bypass -File ${script_path} ${service_name} ${status}"
+	  exit $output.ExitCode
   }
   catch {
-    exit 100
+	exit 100
   }`;
   exec(command, { shell: "powershell.exe" }, (error, stdout, stderr) => {
     if (error) {
@@ -462,11 +481,11 @@ ipcMain.on("rclone:remove", (e, data) => {
   const script_path = path.join(RESOURCES_PATH, "scripts", "remove_rclone.ps1");
   const command = `$ErrorActionPreference = 'stop'
   try {
-      $output = Start-Process powershell -Verb RunAs -Wait -PassThru -WindowStyle Hidden -ArgumentList "-ExecutionPolicy Bypass -File ${script_path} ${service_name}"
-      exit $output.ExitCode
+	  $output = Start-Process powershell -Verb RunAs -Wait -PassThru -WindowStyle Hidden -ArgumentList "-ExecutionPolicy Bypass -File ${script_path} ${service_name}"
+	  exit $output.ExitCode
   }
   catch {
-    exit 100
+	exit 100
   }`;
   exec(command, { shell: "powershell.exe" }, (error, stdout, stderr) => {
     if (error) {
@@ -519,12 +538,12 @@ ipcMain.on("install:yes", (e, data) => {
   const command = `$ErrorActionPreference = 'stop'
 
   try {
-      $process = Start-Process powershell -Verb RunAs -Wait -PassThru -WindowStyle Hidden -ArgumentList "-ExecutionPolicy Bypass -File \`"${script_path}\`" \`"${DEPENDENCIES_PATH}\`""
-      $exitCode = $process.ExitCode
-      exit $exitCode
+	  $process = Start-Process powershell -Verb RunAs -Wait -PassThru -WindowStyle Hidden -ArgumentList "-ExecutionPolicy Bypass -File \`"${script_path}\`" \`"${DEPENDENCIES_PATH}\`""
+	  $exitCode = $process.ExitCode
+	  exit $exitCode
   }
   catch {
-      exit 100
+	  exit 100
   }`;
 
   exec(command, { shell: "powershell.exe" }, (error, stdout, stderr) => {
@@ -553,6 +572,10 @@ ipcMain.on("install:no", (e, data) => {
       main_window.webContents.send("rclone:created", {
         service_name,
         bucket: rclone_services[service_name].bucket,
+        extra_args: rclone_services[service_name].extra_args,
+        username: rclone_services[service_name].username,
+        password: rclone_services[service_name].password,
+        endpoint: rclone_services[service_name].endpoint,
       });
       check_rclone(service_name);
     });

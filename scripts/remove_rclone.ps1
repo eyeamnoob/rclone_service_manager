@@ -8,16 +8,16 @@ try {
         Stop-Service -Name $($service_name)
         sc.exe delete $($service_name) 
         
-        return 0
+        exit 0
     }
     else {
         
 
-        return -1
+        exit -1
     }
 }
 catch {
     
     
-    return 1
+    exit 1
 }

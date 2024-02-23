@@ -20,7 +20,15 @@ let services = {};
 
 let update = false;
 
-function new_service_row(name, bucket, status) {
+function new_service_row(
+  name,
+  bucket,
+  status,
+  extra_args,
+  username,
+  password,
+  endpoint
+) {
   const new_row = document.createElement("tr");
 
   const name_cell = document.createElement("td");
@@ -76,7 +84,11 @@ function new_service_row(name, bucket, status) {
 
   services[name] = {
     status,
-    bucket: bucket,
+    bucket: bucket ? bucket : "",
+    extra_args: extra_args,
+    username: username,
+    password: password,
+    endpoint: endpoint,
   };
 }
 
@@ -131,17 +143,17 @@ function openForm(service_name = "") {
   if (service_name !== "") {
     const bucket = services[service_name].bucket;
     service_name_input.value = service_name;
-    bucket_input.value = bucket;
+    bucket_input.value = bucket ? bucket : "";
+    extra_args_input.value = services[service_name].extra_args;
+    username_input.value = services[service_name].username;
+    password_input.value = services[service_name].password;
+    endpoint_input.value = services[service_name].endpoint;
 
     service_name_input.disabled = true;
-    bucket_input.disabled = true;
-    extra_args_input.disabled = true;
 
     update = true;
   } else {
     service_name_input.disabled = false;
-    bucket_input.disabled = false;
-    extra_args_input.disabled = false;
 
     update = false;
   }
@@ -230,7 +242,15 @@ IPCRenderer.on("rclone:toggled", (e, data) => {
 });
 
 IPCRenderer.on("rclone:created", (event, data) => {
-  new_service_row(data.service_name, data.bucket, false);
+  new_service_row(
+    data.service_name,
+    data.bucket,
+    false,
+    data.extra_args,
+    data.username,
+    data.password,
+    data.endpoint
+  );
 });
 
 IPCRenderer.on("rclone:removed", (event, data) => {
