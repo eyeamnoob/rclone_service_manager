@@ -9,7 +9,7 @@ if (require("electron-squirrel-startup")) {
   app.quit();
 }
 
-process.env.NODE_ENV = "production";
+process.env.NODE_ENV = "development";
 
 const is_dev = process.env.NODE_ENV !== "production";
 
@@ -156,9 +156,14 @@ app.whenReady().then(async () => {
     save_rclone_services();
   }
 
-  app.on("activate", () => {
+  main_window.on("closed", () => {
+    main_window = null;
+    app.quit();
+  });
+
+  app.on("activate", async () => {
     if (BrowserWindow.getAllWindows().length === 0) {
-      create_main_window();
+      await create_main_window();
     }
   });
 });
@@ -583,9 +588,14 @@ ipcMain.on("install:no", (e, data) => {
     save_rclone_services();
   }
 
-  app.on("activate", () => {
+  main_window.on("closed", () => {
+    main_window = null;
+    app.quit();
+  });
+
+  app.on("activate", async () => {
     if (BrowserWindow.getAllWindows().length === 0) {
-      create_main_window();
+      await create_main_window();
     }
   });
 });
